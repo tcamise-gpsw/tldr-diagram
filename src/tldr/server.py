@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import os
-import webbrowser
+import shutil
+import subprocess
 from functools import partial
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
@@ -46,7 +46,12 @@ def serve(workspace: Path, frontend_dist: Path, port: int = 8060, open_browser: 
     url = f"http://127.0.0.1:{port}/views"
     print(f"Serving at {url}")
     if open_browser:
-        webbrowser.open(url)
+        opener = shutil.which("open")
+        if opener:
+            subprocess.Popen([opener, url])
+        else:
+            import webbrowser
+            webbrowser.open(url)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
