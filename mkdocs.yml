@@ -1,0 +1,42 @@
+site_name: "TL;DR Diagram"
+site_description: "Architecture diagram generator with tree-sitter source analysis"
+site_url: https://tcamise-gpsw.github.io/tldr-diagram/
+repo_url: https://github.com/tcamise-gpsw/tldr-diagram
+repo_name: tcamise-gpsw/tldr-diagram
+
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: indigo
+    accent: blue
+  features:
+    - content.code.copy
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Configuration: configuration.md
+  - CLI Reference: cli.md
+  - Architecture: architecture.md
+  - Viewer: viewer.md
+  - Integration: integration.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
