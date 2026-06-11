@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import signal
 import shutil
+import socket
 import subprocess
-from functools import partial
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 
@@ -32,6 +33,26 @@ class DiagramHandler(SimpleHTTPRequestHandler):
         pass
 
 
+def _kill_port(port: int) -> None:
+    """Kill any process already listening on port (macOS/Linux)."""
+    lsof = shutil.which("lsof")
+    if not lsof:
+        return
+    try:
+        out = subprocess.check_output([lsof, "-ti", f"tcp:{port}"], text=True)
+        for pid in out.split():
+            try:
+                signal.kill(int(pid), signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+    except subprocess.CalledProcessError:
+        pass  # no process on port
+
+
+class _ReuseAddrHTTPServer(HTTPServer):
+    allow_reuse_address = True
+
+
 def serve(workspace: Path, frontend_dist: Path, port: int = 8060, open_browser: bool = True) -> None:
     """Start the diagram viewer server."""
     if not (workspace / "elements.yaml").exists():
@@ -39,10 +60,12 @@ def serve(workspace: Path, frontend_dist: Path, port: int = 8060, open_browser: 
     if not (frontend_dist / "index.html").exists():
         raise FileNotFoundError(f"No index.html in {frontend_dist} — build the frontend first")
 
+    _kill_port(port)
+
     DiagramHandler.workspace = workspace
     DiagramHandler.frontend_dist = frontend_dist
 
-    server = HTTPServer(("", port), DiagramHandler)
+    server = _ReuseAddrHTTPServer(("", port), DiagramHandler)
     url = f"http://127.0.0.1:{port}/views"
     print(f"Serving at {url}")
     if open_browser:
