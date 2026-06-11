@@ -223,6 +223,12 @@ To add a new language, write an analyzer module that produces an `AnalysisResult
 - `raw_elements`: `dict[str, dict]` keyed by `"file_path::ClassName"`
 - `raw_connectors`: `list[dict]` with `source`, `target`, `relationship`
 
+## Acknowledgments
+
+TL;DR started as a fork of [tld](https://github.com/Mertcikla/tld) by Mert Cikla — a Go-based architecture diagramming tool inspired by the C4 model. The original tool's concepts of hierarchical elements, connectors, and navigable views directly informed TL;DR's data model and viewer design.
+
+TL;DR diverges from the original by replacing Go with a Python analysis pipeline using tree-sitter for automated source code discovery, and by rewriting the frontend as a canvas-based React viewer with drill-down navigation.
+
 ## License
 
-Private.
+MIT
