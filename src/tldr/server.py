@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import signal
+import time
 import shutil
 import subprocess
 from http.server import HTTPServer, SimpleHTTPRequestHandler
@@ -42,9 +43,16 @@ def _kill_port(port: int) -> None:
         out = subprocess.check_output([lsof, "-ti", f"tcp:{port}"], text=True)
         for pid in out.split():
             try:
-                os.kill(int(pid), signal.SIGTERM)
+                os.kill(int(pid), signal.SIGKILL)
             except ProcessLookupError:
                 pass
+        # Wait for port to actually be released (up to 2s)
+        for _ in range(20):
+            time.sleep(0.1)
+            try:
+                subprocess.check_output([lsof, "-ti", f"tcp:{port}"], text=True)
+            except subprocess.CalledProcessError:
+                break
     except subprocess.CalledProcessError:
         pass  # no process on port
 
