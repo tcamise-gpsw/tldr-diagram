@@ -1,0 +1,31 @@
+{
+  "name": "arch-viewer",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "build:app": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "js-yaml": "^4.1.0",
+    "dagre": "^0.8.5"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/dagre": "^0.7.54",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.14.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^6.4.2",
+    "vitest": "^4.1.2",
+    "@playwright/test": "^1.59.1"
+  }
+}
