@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import os
 import signal
 import shutil
-import socket
 import subprocess
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
@@ -42,7 +42,7 @@ def _kill_port(port: int) -> None:
         out = subprocess.check_output([lsof, "-ti", f"tcp:{port}"], text=True)
         for pid in out.split():
             try:
-                signal.kill(int(pid), signal.SIGTERM)
+                os.kill(int(pid), signal.SIGTERM)
             except ProcessLookupError:
                 pass
     except subprocess.CalledProcessError:
