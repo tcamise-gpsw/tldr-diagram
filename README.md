@@ -1,5 +1,9 @@
 # TL;DR — Tool for Linking Dependency Relationships
 
+[![CI](https://github.com/tcamise-gpsw/tldr-diagram/actions/workflows/ci.yml/badge.svg)](https://github.com/tcamise-gpsw/tldr-diagram/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
+[![TypeScript](https://img.shields.io/badge/frontend-TypeScript%20%2B%20React-3178c6)](frontend/)
+
 Architecture diagram generator that analyzes source code with [tree-sitter](https://tree-sitter.github.io/), classifies elements into architectural groups, and produces interactive navigable diagrams in the browser.
 
 ![TL;DR Logo](frontend/src/assets/logo.png)
