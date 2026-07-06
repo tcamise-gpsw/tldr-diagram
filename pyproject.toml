@@ -1,6 +1,6 @@
 [project]
 name = "tldr-diagram"
-version = "0.1.0"
+version = "0.2.0"
 description = "TL;DR — Tool for Linking Dependency Relationships. Architecture diagram generator with tree-sitter source analysis."
 requires-python = ">=3.11"
 dependencies = [
@@ -16,8 +16,14 @@ tldr = "tldr.__main__:main"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build.targets.sdist.force-include]
+"src/tldr/_frontend" = "src/tldr/_frontend"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/tldr"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/tldr/_frontend" = "tldr/_frontend"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

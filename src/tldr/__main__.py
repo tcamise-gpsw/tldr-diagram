@@ -83,9 +83,22 @@ def _run_analyze(args: argparse.Namespace) -> None:
 def _run_serve(args: argparse.Namespace) -> None:
     from .server import serve
 
+    if args.frontend_dist is not None:
+        frontend_dist = args.frontend_dist.resolve()
+    else:
+        # Default to the frontend bundled inside the installed package
+        frontend_dist = Path(__file__).parent / "_frontend"
+        if not frontend_dist.exists():
+            print(
+                "ERROR: No bundled frontend found and --frontend-dist was not provided.\n"
+                "Either install from PyPI (which bundles the frontend) or pass --frontend-dist.",
+                file=__import__("sys").stderr,
+            )
+            __import__("sys").exit(1)
+
     serve(
         workspace=args.workspace.resolve(),
-        frontend_dist=args.frontend_dist.resolve(),
+        frontend_dist=frontend_dist,
         port=args.port,
         open_browser=not args.no_open,
     )
@@ -157,8 +170,8 @@ def main() -> None:
     serve_parser.add_argument(
         "--frontend-dist",
         type=Path,
-        required=True,
-        help="Path to the built frontend dist/",
+        default=None,
+        help="Path to the built frontend dist/ (default: bundled with package)",
     )
     serve_parser.add_argument(
         "--port",
