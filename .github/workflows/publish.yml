@@ -19,6 +19,8 @@ jobs:
     name: Build and publish
     runs-on: ubuntu-latest
     environment: pypi
+    permissions:
+      id-token: write  # required for OIDC trusted publisher
 
     steps:
       - uses: actions/checkout@v4
@@ -65,5 +67,3 @@ jobs:
       # --- Publish ---
       - name: Publish to PyPI
         run: uv publish
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
