@@ -1,0 +1,69 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag to publish (e.g. v0.2.0) — must already exist on main"
+        required: true
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    environment: pypi
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- Build frontend ---
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build:app
+
+      # --- Copy built frontend into Python package ---
+      - name: Bundle frontend into package
+        run: cp -r frontend/dist src/tldr/_frontend
+
+      # --- Build Python package ---
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Verify wheel contains frontend
+        run: |
+          python3 - <<'EOF'
+          import zipfile, glob, sys
+          wheels = glob.glob("dist/*.whl")
+          assert wheels, "No wheel found"
+          with zipfile.ZipFile(wheels[0]) as z:
+              frontend_files = [n for n in z.namelist() if "_frontend" in n]
+              if not frontend_files:
+                  print("ERROR: wheel does not contain _frontend/", file=sys.stderr)
+                  sys.exit(1)
+              print(f"OK: {len(frontend_files)} frontend files bundled")
+          EOF
+
+      # --- Publish ---
+      - name: Publish to PyPI
+        run: uv publish
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
