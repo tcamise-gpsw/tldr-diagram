@@ -1,6 +1,7 @@
 # TL;DR — Tool for Linking Dependency Relationships
 
 [![CI](https://github.com/tcamise-gpsw/tldr-diagram/actions/workflows/ci.yml/badge.svg)](https://github.com/tcamise-gpsw/tldr-diagram/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/tldr-diagram)](https://pypi.org/project/tldr-diagram/)
 [![Docs](https://img.shields.io/badge/docs-tcamise--gpsw.github.io-blue)](https://tcamise-gpsw.github.io/tldr-diagram/)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
 [![TypeScript](https://img.shields.io/badge/frontend-TypeScript%20%2B%20React-3178c6)](frontend/)
