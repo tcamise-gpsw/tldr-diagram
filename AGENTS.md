@@ -1,5 +1,21 @@
 # Repository Guidelines
 
+## Public Repository — Sensitive Data Policy
+
+**This repository is public.** All code, commits, comments, and documentation are visible to anyone on the internet.
+
+Before committing or pushing anything, verify:
+
+- **No proprietary source code.** Do not include Kotlin/Swift/Java source files, file paths, package names, class names, or any other content copied or derived from a GoPro (or any other company's) private codebase. The tool operates *on* such code at runtime but must never embed it.
+- **No internal infrastructure details.** No internal hostnames, API endpoints, CI server URLs, internal repo URLs, Jira project keys, or internal tooling references.
+- **No credentials or secrets.** No API keys, tokens, passwords, certificates, or any credential-like strings — even in comments or test fixtures.
+- **No unreleased product information.** No feature names, product codenames, hardware specs, firmware details, or roadmap items that have not been publicly announced by GoPro.
+- **No PII.** No employee names (beyond public GitHub handles), email addresses, or any personally identifiable information.
+
+**When in doubt, leave it out.** If you are unsure whether something is safe to publish, do not commit it — check with the project owner first.
+
+The `groups.yaml` files used by consumer repos to configure this tool may contain internal module names and package structures. Those files live in the private consumer repo and must never be copied here.
+
 ## Project Overview
 
 TL;DR (Tool for Linking Dependency Relationships) is an architecture diagram generator. It analyzes source code with tree-sitter, classifies elements into architectural groups via YAML config, and produces an interactive navigable diagram in the browser.
