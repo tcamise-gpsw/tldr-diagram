@@ -43,28 +43,23 @@ React viewer ──→ dagre layout → canvas rendering → interactive diagram
 ### Prerequisites
 
 - Python >= 3.11
-- [uv](https://docs.astral.sh/uv/) (Python package manager)
-- Node.js (for building the frontend)
+- [pipx](https://pipx.pypa.io/) — `brew install pipx` or `pip install --user pipx`
 
-### Analyze and View
+### Install and Run
 
 ```bash
-# 1. Build the frontend
-cd frontend && npm install && npm run build:app && cd ..
-
-# 2. Run analysis (requires a groups.yaml in the workspace)
-uv run python -m tldr analyze \
+# Analyze your Kotlin sources (requires a groups.yaml in the workspace)
+pipx run --spec tldr-diagram tldr analyze \
   --source-root /path/to/kotlin/sources \
   --input-dir /path/to/workspace \
   --repo-root /path/to/repo
 
-# 3. View the diagram
-uv run python -m tldr serve \
-  --workspace /path/to/workspace \
-  --frontend-dist frontend/dist
+# View the diagram
+pipx run --spec tldr-diagram tldr serve \
+  --workspace /path/to/workspace
 ```
 
-Opens at `http://127.0.0.1:8060/views`.
+Opens at `http://127.0.0.1:8060/views`. The package includes a pre-built frontend — no Node.js or frontend build step required.
 
 ## Configuration
 
@@ -145,13 +140,13 @@ tldr analyze --source-root <path> [options]
 ### `tldr serve`
 
 ```
-tldr serve --workspace <path> --frontend-dist <path> [options]
+tldr serve --workspace <path> [options]
 ```
 
 | Flag | Description |
 |------|-------------|
 | `--workspace` | **(required)** Directory with `elements.yaml` and `connectors.yaml` |
-| `--frontend-dist` | **(required)** Path to built `frontend/dist/` |
+| `--frontend-dist` | Path to built `frontend/dist/` (default: bundled frontend from PyPI package) |
 | `--port` | HTTP port (default: 8060) |
 | `--no-open` | Don't open browser automatically |
 
@@ -179,18 +174,29 @@ The `public/` directory contains sample `elements.yaml` and `connectors.yaml` fo
 
 ## Using from Another Repository
 
-Create a thin shell script in your project that:
+Your project only needs two things:
 
-1. Clones or updates this repo
-2. Builds the frontend
-3. Runs `tldr analyze` pointing at your source tree
-4. Runs `tldr serve` to view
+1. **`groups.yaml`** — routing rules specific to your codebase (modules, groups, package rules)
+2. A shell script that runs `tldr analyze` then `tldr serve` via `pipx`
 
-Your repo only needs to provide:
-- `groups.yaml` — routing rules specific to your project
-- A shell script — thin wrapper calling `tldr`
+Example script:
 
-See [infra-katalyst-platform](https://github.com/gopro/infra-katalyst-platform) for a working example at `katalyst-connect/docs/tld/`.
+```bash
+#!/bin/bash
+set -e
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+pipx run --spec tldr-diagram tldr analyze \
+  --input-dir "$SCRIPT_DIR" \
+  --source-root "$REPO_ROOT/src" \
+  --repo-root "$REPO_ROOT"
+
+pipx run --spec tldr-diagram tldr serve \
+  --workspace "$SCRIPT_DIR"
+```
+
+No cloning, no Node.js, no frontend build — the PyPI package includes the pre-built frontend.
 
 ## Project Structure
 
