@@ -15,9 +15,16 @@ import './styles.css';
 export const App: React.FC = () => {
   const [data, setData] = useState<DiagramData | null>(null);
   const [sourceRoot, setSourceRoot] = useState<string | null>(null);
-  const [navigationStack, setNavigationStack] = useState<string[]>(['root']);
+  const [navigationStack, setNavigationStack] = useState<string[]>(() => {
+    const view = new URLSearchParams(window.location.search).get('view');
+    if (!view || view === 'root') return ['root'];
+    const segs = view.split('--');
+    return ['root', ...segs.map((_, i) => segs.slice(0, i + 1).join('--'))];
+  });
   const currentView = navigationStack[navigationStack.length - 1];
-  const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [selectedNode, setSelectedNode] = useState<string | null>(
+    () => new URLSearchParams(window.location.search).get('selected'),
+  );
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [hoveredGroupIcon, setHoveredGroupIcon] = useState<string | null>(null);
@@ -25,7 +32,9 @@ export const App: React.FC = () => {
   const [hoveredSourceIcon, setHoveredSourceIcon] = useState<string | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [showExternalStubs, setShowExternalStubs] = useState(true);
-  const [focusedNode, setFocusedNode] = useState<string | null>(null);
+  const [focusedNode, setFocusedNode] = useState<string | null>(
+    () => new URLSearchParams(window.location.search).get('focus'),
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,6 +56,16 @@ export const App: React.FC = () => {
         setLoading(false);
       });
   }, []);
+
+  // Sync navigation state → URL (replaceState keeps history entries clean)
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (currentView !== 'root') params.set('view', currentView);
+    if (selectedNode) params.set('selected', selectedNode);
+    if (focusedNode) params.set('focus', focusedNode);
+    const qs = params.toString();
+    window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
+  }, [currentView, selectedNode, focusedNode]);
 
   const highlightedExternalEdges = useMemo(() => {
     if (!data || !selectedNode) return new Set<string>();

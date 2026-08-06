@@ -254,7 +254,7 @@ function drawNodes(
         drawFocusIcon(ctx, node.x + node.width / 2 - 12, node.y - node.height / 2 + 12, focusHovered);
         if (elem.file_path) {
           const srcHovered = node.ref === state.hoveredSourceIcon;
-          drawSourceIcon(ctx, node.x + node.width / 2 - 12, node.y + node.height / 2 - 12, srcHovered);
+          drawSourceIcon(ctx, node.x + node.width / 2 - 15, node.y + node.height / 2 - 12, srcHovered);
         }
       }
     }

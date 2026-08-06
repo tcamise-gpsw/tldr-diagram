@@ -69,7 +69,7 @@ export function hitTestSourceIcon(worldX: number, worldY: number, nodes: LayoutN
     const elem = elements.get(node.ref);
     if (!elem?.file_path) continue;
     // Bottom-right corner
-    const iconX = node.x + node.width / 2 - 12;
+    const iconX = node.x + node.width / 2 - 15;
     const iconY = node.y + node.height / 2 - 12;
     const dx = worldX - iconX;
     const dy = worldY - iconY;
