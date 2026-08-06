@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { CameraState, screenToWorld, pan, zoomAtPoint, INITIAL_CAMERA, fitToContent } from './camera';
-import { hitTestNodes, isDrag, hitTestGroupIcon } from './hitTest';
+import { hitTestNodes, isDrag, hitTestGroupIcon, hitTestFocusIcon } from './hitTest';
 import { renderFrame, RenderState, ExternalStub } from './renderer';
 import { ViewLayout } from './layout';
 import { TransitionState, updateTransition } from './animation';
@@ -13,6 +13,8 @@ interface CanvasViewportProps {
   externalStubs?: ExternalStub[];
   onSelect: (ref: string | null) => void;
   onEnterGroup: (ref: string) => void;
+  onShowFocus?: (ref: string) => void;
+  onHoverFocusIcon?: (ref: string | null) => void;
   onHover: (ref: string | null, x: number, y: number) => void;
   onHoverGroupIcon: (ref: string | null) => void;
   onFitToContent?: () => void;
@@ -27,6 +29,8 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
   externalStubs = [],
   onSelect,
   onEnterGroup,
+  onShowFocus,
+  onHoverFocusIcon,
   onHover,
   onHoverGroupIcon,
   onFitToContent: onFitToContentProp,
@@ -169,16 +173,18 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 
     const worldPoint = screenToWorld(screenX, screenY, cameraRef.current);
     const iconHitRef = hitTestGroupIcon(worldPoint.x, worldPoint.y, layout.nodes);
+    const focusIconHitRef = hitTestFocusIcon(worldPoint.x, worldPoint.y, layout.nodes);
     const hitRef = hitTestNodes(worldPoint.x, worldPoint.y, layout.nodes);
 
     onHoverGroupIcon(iconHitRef);
+    onHoverFocusIcon?.(focusIconHitRef);
     onHover(hitRef, e.clientX, e.clientY);
 
     const canvas = canvasRef.current;
     if (canvas) {
-      canvas.style.cursor = iconHitRef ? 'pointer' : '';
+      canvas.style.cursor = iconHitRef || focusIconHitRef ? 'pointer' : '';
     }
-  }, [layout.nodes, onHover, onHoverGroupIcon]);
+  }, [layout.nodes, onHover, onHoverGroupIcon, onHoverFocusIcon]);
 
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
     if (currentTransitionRef.current?.active) return;
@@ -197,11 +203,16 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
       if (iconHitRef) {
         onEnterGroup(iconHitRef);
       } else {
-        const hitRef = hitTestNodes(worldPoint.x, worldPoint.y, layout.nodes);
-        onSelect(hitRef);
+        const focusIconHitRef = hitTestFocusIcon(worldPoint.x, worldPoint.y, layout.nodes);
+        if (focusIconHitRef && onShowFocus) {
+          onShowFocus(focusIconHitRef);
+        } else {
+          const hitRef = hitTestNodes(worldPoint.x, worldPoint.y, layout.nodes);
+          onSelect(hitRef);
+        }
       }
     }
-  }, [layout.nodes, onSelect, onEnterGroup]);
+  }, [layout.nodes, onSelect, onEnterGroup, onShowFocus]);
 
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
     if (currentTransitionRef.current?.active) return;
@@ -218,9 +229,11 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
       const node = layout.nodes.find((n) => n.ref === hitRef);
       if (node?.isGroup) {
         onEnterGroup(hitRef);
+      } else if (onShowFocus) {
+        onShowFocus(hitRef);
       }
     }
-  }, [layout.nodes, onEnterGroup]);
+  }, [layout.nodes, onEnterGroup, onShowFocus]);
 
   useEffect(() => {
     if (transitionState && transitionState.active) {

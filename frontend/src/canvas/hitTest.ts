@@ -46,6 +46,22 @@ export function hitTestGroupIcon(worldX: number, worldY: number, nodes: LayoutNo
   return null;
 }
 
+export function hitTestFocusIcon(worldX: number, worldY: number, nodes: LayoutNode[]): string | null {
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const node = nodes[i];
+    if (node.isGroup) continue;
+    // Same position as group icon: top-right corner
+    const iconX = node.x + node.width / 2 - 16;
+    const iconY = node.y - node.height / 2 + 16;
+    const dx = worldX - iconX;
+    const dy = worldY - iconY;
+    if (dx * dx + dy * dy <= 256) { // 16px radius
+      return node.ref;
+    }
+  }
+  return null;
+}
+
 export function hitTestExternalStubs(
   worldX: number,
   worldY: number,

@@ -20,6 +20,7 @@ export const App: React.FC = () => {
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [hoveredGroupIcon, setHoveredGroupIcon] = useState<string | null>(null);
+  const [hoveredFocusIcon, setHoveredFocusIcon] = useState<string | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [showExternalStubs, setShowExternalStubs] = useState(true);
   const [focusedNode, setFocusedNode] = useState<string | null>(null);
@@ -289,6 +290,7 @@ export const App: React.FC = () => {
           renderState={{
             hoveredNode,
             hoveredGroupIcon,
+            hoveredFocusIcon,
             selectedNode,
             focusedNode,
             showExternalStubs,
@@ -298,8 +300,10 @@ export const App: React.FC = () => {
           externalStubs={externalStubs}
           onSelect={handleSelect}
           onEnterGroup={handleEnterGroup}
+          onShowFocus={handleShowFocus}
           onHover={handleHover}
           onHoverGroupIcon={setHoveredGroupIcon}
+          onHoverFocusIcon={setHoveredFocusIcon}
           transitionState={pendingNavigation?.transitionState}
           onTransitionComplete={() => {
             if (pendingNavigation?.action) {

@@ -9,6 +9,7 @@ export interface RenderState {
   hoveredGroupIcon: string | null;
   selectedNode: string | null;
   focusedNode: string | null;
+  hoveredFocusIcon: string | null;
   showExternalStubs: boolean;
   highlightedExternalEdges: Set<string>;
 }
@@ -242,10 +243,15 @@ function drawNodes(
       ctx.fillText(truncateText(ctx, elem.summary || elem.description || '', maxTextWidth), node.x, descY);
     }
 
-    // Draw expand icon for groups
-    if (node.isGroup) {
-      const iconHovered = node.ref === state.hoveredGroupIcon;
-      drawGroupIcon(ctx, node.x + node.width / 2 - 16, node.y - node.height / 2 + 16, iconHovered);
+    // Draw expand icon for groups; focus icon for leaf nodes (only when element exists)
+    if (elem) {
+      if (node.isGroup) {
+        const iconHovered = node.ref === state.hoveredGroupIcon;
+        drawGroupIcon(ctx, node.x + node.width / 2 - 16, node.y - node.height / 2 + 16, iconHovered);
+      } else {
+        const iconHovered = node.ref === state.hoveredFocusIcon;
+        drawFocusIcon(ctx, node.x + node.width / 2 - 16, node.y - node.height / 2 + 16, iconHovered);
+      }
     }
   }
 }
@@ -302,6 +308,23 @@ function drawGroupIcon(ctx: CanvasRenderingContext2D, x: number, y: number, hove
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('⊞', x, y);
+}
+
+function drawFocusIcon(ctx: CanvasRenderingContext2D, x: number, y: number, hovered: boolean): void {
+  if (hovered) {
+    ctx.beginPath();
+    ctx.arc(x, y, 12, 0, Math.PI * 2);
+    ctx.fillStyle = theme.FOCUS_ICON_HOVER_BG;
+    ctx.fill();
+    ctx.strokeStyle = theme.FOCUS_ICON_COLOR;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  ctx.fillStyle = hovered ? theme.FOCUS_ICON_COLOR : 'rgba(163, 113, 247, 0.45)';
+  ctx.font = theme.FONT_GROUP_ICON;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('◎', x, y);
 }
 
 /**
