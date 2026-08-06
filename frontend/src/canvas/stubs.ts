@@ -41,7 +41,7 @@ interface StubTarget {
 }
 
 type StubAccum = Omit<ExternalStub, 'angle' | 'count' | 'targetName' | 'targetRef' | 'expanded'> & {
-  targets: StubTarget[];
+  targets: Map<string, StubTarget>;
 };
 
 export const EXTERNAL_STUB_LENGTH = 50;
@@ -155,7 +155,7 @@ export function computeExternalStubs(
     const existing = groups.get(groupKey);
 
     if (existing) {
-      existing.targets.push({ ref: otherEndpointRef, name: otherElement?.name ?? otherEndpointRef });
+      existing.targets.set(otherEndpointRef, { ref: otherEndpointRef, name: otherElement?.name ?? otherEndpointRef });
       continue;
     }
 
@@ -169,16 +169,17 @@ export function computeExternalStubs(
       nodeY: layoutNode.y,
       nodeWidth: layoutNode.width,
       nodeHeight: layoutNode.height,
-      targets: [{ ref: otherEndpointRef, name: otherElement?.name ?? otherEndpointRef }],
+      targets: new Map([[otherEndpointRef, { ref: otherEndpointRef, name: otherElement?.name ?? otherEndpointRef }]]),
     });
   }
 
   const stubsByNode = new Map<string, Array<Omit<ExternalStub, 'angle'>>>();
   for (const group of groups.values()) {
     const { targets, ...base } = group;
-    const shouldExpand = autoExpandForNode === group.nodeRef && targets.length > 1;
+    const targetList = [...targets.values()];
+    const shouldExpand = autoExpandForNode === group.nodeRef && targetList.length > 1;
     const stubs = shouldExpand
-      ? targets.map((target) => ({
+      ? targetList.map((target) => ({
           ...base,
           targetName: target.name,
           targetRef: target.ref,
@@ -187,9 +188,9 @@ export function computeExternalStubs(
         }))
       : [{
           ...base,
-          targetName: targets.length === 1 ? targets[0].name : undefined,
-          targetRef: targets.length === 1 ? targets[0].ref : undefined,
-          count: targets.length,
+          targetName: targetList.length === 1 ? targetList[0].name : undefined,
+          targetRef: targetList.length === 1 ? targetList[0].ref : undefined,
+          count: targetList.length,
           expanded: false,
         }];
     const list = stubsByNode.get(group.nodeRef) ?? [];

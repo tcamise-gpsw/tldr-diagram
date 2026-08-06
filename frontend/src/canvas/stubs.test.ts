@@ -456,7 +456,7 @@ describe('computeExternalStubs', () => {
 
       expect(stubs).toHaveLength(1);
       expect(stubs[0].nodeRef).toBe('core-data');
-      expect(stubs[0].count).toBe(2);
+      expect(stubs[0].count).toBe(1);
       expect(stubs[0].targetGroup).toBe('External Module');
       expect(stubs[0].direction).toBe('outbound');
     });
@@ -554,6 +554,28 @@ describe('computeExternalStubs', () => {
       ]);
       expect(expanded.map((stub) => stub.targetRef).sort()).toEqual(['port-a', 'port-b']);
       expect(expanded.every((stub) => stub.count === 1 && stub.expanded)).toBe(true);
+    });
+    it('deduplicates multiple connectors from different descendants to the same external target', () => {
+      const elements = [
+        makeElement('group-node', 'view', 'GroupNode'),
+        makeElement('class-a', 'group-node', 'ClassA'),
+        makeElement('class-b', 'group-node', 'ClassB'),
+        makeElement('ext-group', 'root', 'ExternalGroup'),
+        makeElement('shared-dep', 'ext-group', 'SharedDep'),
+      ];
+      // Two internal classes both depending on the same external target
+      const connectors = [
+        makeConnector('c1', 'class-a', 'shared-dep', 'view'),
+        makeConnector('c2', 'class-b', 'shared-dep', 'view'),
+      ];
+      const data = makeData(elements, connectors);
+      const layout = makeLayout([{ ref: 'group-node' }]);
+
+      const stubs = computeExternalStubs(data, 'view', layout);
+      expect(stubs).toHaveLength(1);
+      expect(stubs[0].count).toBe(1);
+      expect(stubs[0].targetName).toBe('SharedDep');
+      expect(stubs[0].targetRef).toBe('shared-dep');
     });
   });
 });
