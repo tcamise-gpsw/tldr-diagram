@@ -111,23 +111,14 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         <p className="panel-description">{element.description || element.summary}</p>
         {element.technology && <p className="panel-tech">Tech: {element.technology}</p>}
       </div>
-      {onShowNeighborhood && (
+      {onShowNeighborhood && !element.has_view && (
         <div className="panel-section">
-          {focusedNode === selectedNode ? (
-            <button
-              className="panel-button panel-button--neighborhood"
-              onClick={onExitNeighborhood}
-            >
-              Exit Neighborhood
-            </button>
-          ) : (
-            <button
-              className={`panel-button panel-button--neighborhood${element.has_view ? ' panel-button--dimmed' : ''}`}
-              onClick={element.has_view ? undefined : () => onShowNeighborhood(selectedNode)}
-            >
-              Show Neighborhood
-            </button>
-          )}
+          <button
+            className={`panel-button panel-button--neighborhood${focusedNode === selectedNode ? ' panel-button--active' : ' panel-button--dimmed'}`}
+            onClick={focusedNode === selectedNode ? onExitNeighborhood : () => onShowNeighborhood(selectedNode)}
+          >
+            {focusedNode === selectedNode ? 'Exit Neighborhood' : 'Show Neighborhood'}
+          </button>
         </div>
       )}
 
@@ -192,14 +183,16 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         )}
       </div>
 
-      <div className="panel-section">
-        <button
-          className={`panel-button panel-button--external${!hasExternal ? ' panel-button--dimmed' : ''}`}
-          onClick={hasExternal ? () => setShowExternal(!showExternal) : undefined}
-        >
-          {showExternal ? '✓' : '○'} Show External
-        </button>
-      </div>
+      {hasExternal && (
+        <div className="panel-section">
+          <button
+            className={`panel-button panel-button--external${showExternal ? ' panel-button--active' : ' panel-button--dimmed'}`}
+            onClick={() => setShowExternal(!showExternal)}
+          >
+            {showExternal ? 'Hide External' : 'Show External'}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

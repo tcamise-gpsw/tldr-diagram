@@ -237,44 +237,55 @@ body {
 
 .panel-button {
   padding: 8px 12px;
-  background-color: #238636;
-  border: 1px solid #2ea043;
+  background-color: transparent;
+  border: 1px solid #30363d;
   border-radius: 6px;
-  color: #e6edf3;
+  color: #8b949e;
   font-size: 12px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, color 0.2s;
 }
 
-.panel-button:hover {
-  background-color: #2ea043;
-}
-
+/* Neighborhood — purple */
 .panel-button--neighborhood {
-  background-color: rgba(163, 113, 247, 0.15);
   border-color: #a371f7;
   color: #a371f7;
 }
 
-.panel-button--neighborhood:hover:not(.panel-button--dimmed) {
-  background-color: rgba(163, 113, 247, 0.3);
+.panel-button--neighborhood.panel-button--active {
+  background-color: rgba(163, 113, 247, 0.2);
 }
 
+.panel-button--neighborhood.panel-button--active:hover {
+  background-color: rgba(163, 113, 247, 0.35);
+}
+
+.panel-button--neighborhood.panel-button--dimmed:hover {
+  background-color: rgba(163, 113, 247, 0.08);
+}
+
+/* External — amber */
 .panel-button--external {
-  background-color: #9e6a03;
   border-color: #f0883e;
-  color: #e6edf3;
+  color: #f0883e;
 }
 
-.panel-button--external:hover:not(.panel-button--dimmed) {
-  background-color: #bb8009;
+.panel-button--external.panel-button--active {
+  background-color: rgba(240, 136, 62, 0.2);
 }
 
+.panel-button--external.panel-button--active:hover {
+  background-color: rgba(240, 136, 62, 0.35);
+}
+
+.panel-button--external.panel-button--dimmed:hover {
+  background-color: rgba(240, 136, 62, 0.08);
+}
+
+/* Dimmed — inactive but clickable */
 .panel-button--dimmed {
   background-color: transparent;
   color: #484f58;
-  cursor: not-allowed;
-  pointer-events: none;
 }
 
 .tooltip {
