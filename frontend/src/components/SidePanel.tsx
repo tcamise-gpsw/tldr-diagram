@@ -7,6 +7,8 @@ interface SidePanelProps {
   currentView: string;
   data: DiagramData;
   onNavigateToElement?: (ref: string) => void;
+  collapsed: boolean;
+  onSetCollapsed: (collapsed: boolean) => void;
 }
 
 export const SidePanel: React.FC<SidePanelProps> = ({
@@ -14,6 +16,8 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   currentView,
   data,
   onNavigateToElement,
+  collapsed,
+  onSetCollapsed,
 }) => {
   const element = useMemo(() => selectedNode ? data.elements.get(selectedNode) : undefined, [data, selectedNode]);
   
@@ -23,7 +27,6 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   });
 
   const [showExternal, setShowExternal] = useState(true);
-  const [collapsed, setCollapsed] = useState(false);
 
   const [panelWidth, setPanelWidth] = useState(640);
   const draggingRef = useRef(false);
@@ -78,7 +81,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   if (collapsed) {
     return (
       <div className="side-panel side-panel--collapsed">
-        <button className="side-panel-toggle" onClick={() => setCollapsed(false)} title="Expand panel">
+        <button className="side-panel-toggle" onClick={() => onSetCollapsed(false)} title="Expand panel">
           ◀
         </button>
       </div>
@@ -90,7 +93,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   return (
     <div className="side-panel" style={{ width: panelWidth }}>
       <div className="side-panel-resize-handle" onMouseDown={handleResizeStart} />
-      <button className="side-panel-toggle side-panel-toggle--expanded" onClick={() => setCollapsed(true)} title="Collapse panel">
+      <button className="side-panel-toggle side-panel-toggle--expanded" onClick={() => onSetCollapsed(true)} title="Collapse panel">
         ▶
       </button>
       <div className="panel-header">

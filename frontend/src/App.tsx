@@ -16,6 +16,7 @@ export const App: React.FC = () => {
   const [navigationStack, setNavigationStack] = useState<string[]>(['root']);
   const currentView = navigationStack[navigationStack.length - 1];
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [hoveredGroupIcon, setHoveredGroupIcon] = useState<string | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -287,6 +288,8 @@ export const App: React.FC = () => {
           currentView={currentView}
           data={data}
           onNavigateToElement={handleNavigateToElement}
+          collapsed={panelCollapsed}
+          onSetCollapsed={setPanelCollapsed}
         />
       )}
     </div>
