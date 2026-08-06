@@ -33,7 +33,7 @@ export function computeLayout(elements: Element[], connectors: Connector[]): Vie
   }
 
   const g = new dagre.graphlib.Graph();
-  g.setGraph({ rankdir: 'TB', nodesep: 60, ranksep: 80, edgesep: 20 });
+  g.setGraph({ rankdir: 'BT', nodesep: 60, ranksep: 80, edgesep: 20 });
   g.setDefaultEdgeLabel(() => ({}));
 
   // Add nodes (use ref as node ID, not name)
@@ -42,9 +42,10 @@ export function computeLayout(elements: Element[], connectors: Connector[]): Vie
   }
 
   // Add edges (only between nodes that are both in this layout)
-  // Dagre edge direction is REVERSED so that dependencies/parents rank higher (top)
-  // and dependents/children rank lower (bottom). Arrowhead renders at the last point
-  // which will be the dependent/child end.
+  // Dagre edge direction is REVERSED and rankdir is BT so that dependents/children
+  // rank higher (top) and dependencies/parents rank lower (bottom) — arrows point
+  // downward from a dependent to what it depends on. Arrowhead renders at the last
+  // point, the dependency end.
   const nodeRefSet = new Set(elements.map(e => e.ref));
   const connectorByEdge = new Map<string, Connector>();
   for (const conn of connectors) {
