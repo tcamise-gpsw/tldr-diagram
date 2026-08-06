@@ -261,7 +261,7 @@ export const App: React.FC = () => {
                     : handleGoToLevel(idx)}
                   style={{ cursor: 'pointer', fontWeight: isLast ? 'bold' : 'normal' }}
                 >
-                  {item}
+                  {item.includes('--') ? item.split('--').at(-1) : item}
                 </span>
               </React.Fragment>
             );
