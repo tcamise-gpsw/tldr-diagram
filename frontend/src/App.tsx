@@ -229,7 +229,7 @@ export const App: React.FC = () => {
   const viewElements = neighborhood?.elements ?? getViewElements(data, currentView);
   const viewConnectors = neighborhood?.connectors ?? getViewConnectors(data, currentView);
   const layoutKey = focusedNode ? `neighborhood:${focusedNode}` : currentView;
-  const layout = getOrComputeLayout(layoutKey, viewElements, viewConnectors, focusedNode ? 'TB' : 'BT');
+  const layout = getOrComputeLayout(layoutKey, viewElements, viewConnectors, 'BT');
 
   // Neighborhoods already contain every direct edge. Hierarchical views use
   // expandable stubs for connections beyond their current boundary.
