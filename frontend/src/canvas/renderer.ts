@@ -8,6 +8,7 @@ export interface RenderState {
   hoveredNode: string | null;
   hoveredGroupIcon: string | null;
   selectedNode: string | null;
+  focusedNode: string | null;
   showExternalStubs: boolean;
   highlightedExternalEdges: Set<string>;
 }
@@ -207,12 +208,17 @@ function drawNodes(
 
     const isHovered = node.ref === state.hoveredNode;
     const isSelected = node.ref === state.selectedNode;
+    const isFocused = node.ref === state.focusedNode;
     const elem = elements.get(node.ref);
 
     // Draw node background
     ctx.fillStyle = theme.NODE_BG;
-    ctx.strokeStyle = isSelected ? theme.NODE_BORDER_SELECTED : isHovered ? theme.NODE_BORDER_HOVER : theme.NODE_BORDER;
-    ctx.lineWidth = isSelected ? NODE_SELECTED_STROKE_WIDTH : NODE_DEFAULT_STROKE_WIDTH;
+    ctx.strokeStyle = isFocused
+      ? theme.NODE_BORDER_NEIGHBORHOOD
+      : isSelected ? theme.NODE_BORDER_SELECTED
+      : isHovered ? theme.NODE_BORDER_HOVER
+      : theme.NODE_BORDER;
+    ctx.lineWidth = (isFocused || isSelected) ? NODE_SELECTED_STROKE_WIDTH : NODE_DEFAULT_STROKE_WIDTH;
 
     drawRoundedRect(ctx, node.x - node.width / 2, node.y - node.height / 2, node.width, node.height, theme.NODE_RADIUS);
     ctx.fill();

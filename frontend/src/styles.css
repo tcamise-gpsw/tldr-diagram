@@ -250,13 +250,31 @@ body {
   background-color: #2ea043;
 }
 
+.panel-button--neighborhood {
+  background-color: rgba(163, 113, 247, 0.15);
+  border-color: #a371f7;
+  color: #a371f7;
+}
+
+.panel-button--neighborhood:hover:not(.panel-button--dimmed) {
+  background-color: rgba(163, 113, 247, 0.3);
+}
+
 .panel-button--external {
   background-color: #9e6a03;
   border-color: #f0883e;
+  color: #e6edf3;
 }
 
-.panel-button--external:hover {
+.panel-button--external:hover:not(.panel-button--dimmed) {
   background-color: #bb8009;
+}
+
+.panel-button--dimmed {
+  background-color: transparent;
+  color: #484f58;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .tooltip {

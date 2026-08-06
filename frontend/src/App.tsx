@@ -285,6 +285,7 @@ export const App: React.FC = () => {
             hoveredNode,
             hoveredGroupIcon,
             selectedNode,
+            focusedNode,
             showExternalStubs,
             highlightedExternalEdges,
           }}

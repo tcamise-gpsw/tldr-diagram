@@ -111,14 +111,20 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         <p className="panel-description">{element.description || element.summary}</p>
         {element.technology && <p className="panel-tech">Tech: {element.technology}</p>}
       </div>
-      {!element.has_view && onShowNeighborhood && (
+      {onShowNeighborhood && (
         <div className="panel-section">
           {focusedNode === selectedNode ? (
-            <button className="panel-button" onClick={onExitNeighborhood}>
+            <button
+              className="panel-button panel-button--neighborhood"
+              onClick={onExitNeighborhood}
+            >
               Exit Neighborhood
             </button>
           ) : (
-            <button className="panel-button" onClick={() => onShowNeighborhood(selectedNode)}>
+            <button
+              className={`panel-button panel-button--neighborhood${element.has_view ? ' panel-button--dimmed' : ''}`}
+              onClick={element.has_view ? undefined : () => onShowNeighborhood(selectedNode)}
+            >
               Show Neighborhood
             </button>
           )}
@@ -186,13 +192,14 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         )}
       </div>
 
-      {hasExternal && (
-        <div className="panel-section">
-          <button className="panel-button panel-button--external" onClick={() => setShowExternal(!showExternal)}>
-            {showExternal ? '✓' : '○'} Show External
-          </button>
-        </div>
-      )}
+      <div className="panel-section">
+        <button
+          className={`panel-button panel-button--external${!hasExternal ? ' panel-button--dimmed' : ''}`}
+          onClick={hasExternal ? () => setShowExternal(!showExternal) : undefined}
+        >
+          {showExternal ? '✓' : '○'} Show External
+        </button>
+      </div>
     </div>
   );
 };

@@ -4,6 +4,7 @@ export const NODE_BG = '#161b22';
 export const NODE_BORDER = '#30363d';
 export const NODE_BORDER_HOVER = '#58a6ff';
 export const NODE_BORDER_SELECTED = '#58a6ff';
+export const NODE_BORDER_NEIGHBORHOOD = '#a371f7';
 export const NODE_TEXT = '#e6edf3';
 export const NODE_TEXT_SECONDARY = '#8b949e';
 export const CONNECTOR_COLOR = '#58a6ff';

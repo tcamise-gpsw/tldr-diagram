@@ -80,6 +80,7 @@ function emptyState(): RenderState {
     hoveredNode: null,
     hoveredGroupIcon: null,
     selectedNode: null,
+    focusedNode: null,
     showExternalStubs: false,
     highlightedExternalEdges: new Set(),
   };
