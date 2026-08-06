@@ -174,7 +174,6 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
     onHoverGroupIcon(iconHitRef);
     onHover(hitRef, e.clientX, e.clientY);
 
-    // Set pointer cursor when hovering over a group icon
     const canvas = canvasRef.current;
     if (canvas) {
       canvas.style.cursor = iconHitRef ? 'pointer' : '';
@@ -191,7 +190,6 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
     if (!isDragging) {
       const rect = canvasRef.current?.getBoundingClientRect();
       if (!rect) return;
-
       const screenX = e.clientX - rect.left;
       const screenY = e.clientY - rect.top;
       const worldPoint = screenToWorld(screenX, screenY, cameraRef.current);

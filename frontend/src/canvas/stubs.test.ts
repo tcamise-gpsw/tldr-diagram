@@ -524,4 +524,36 @@ describe('computeExternalStubs', () => {
       expect(stubs[0].direction).toBe('outbound');
     });
   });
+
+  describe('interactive expansion', () => {
+    it('expands a grouped stub into one labeled stub per external target', () => {
+      const elements = [
+        makeElement('inside', 'group-a', 'Inside'),
+        makeElement('ports', 'root', 'Ports'),
+        makeElement('port-a', 'ports', 'CameraConnectionController'),
+        makeElement('port-b', 'ports', 'CameraConnectionStateProvider'),
+      ];
+      const connectors = [
+        makeConnector('c1', 'inside', 'port-a'),
+        makeConnector('c2', 'inside', 'port-b'),
+      ];
+      const data = makeData(elements, connectors);
+      const layout = makeLayout([{ ref: 'inside' }]);
+
+      const collapsed = computeExternalStubs(data, 'group-a', layout);
+      expect(collapsed).toHaveLength(1);
+      expect(collapsed[0].count).toBe(2);
+
+      const expanded = computeExternalStubs(data, 'group-a', layout, 'inside');
+
+      expect(expanded).toHaveLength(2);
+      expect(expanded.every((stub) => stub.groupKey === collapsed[0].groupKey)).toBe(true);
+      expect(expanded.map((stub) => stub.targetName).sort()).toEqual([
+        'CameraConnectionController',
+        'CameraConnectionStateProvider',
+      ]);
+      expect(expanded.map((stub) => stub.targetRef).sort()).toEqual(['port-a', 'port-b']);
+      expect(expanded.every((stub) => stub.count === 1 && stub.expanded)).toBe(true);
+    });
+  });
 });

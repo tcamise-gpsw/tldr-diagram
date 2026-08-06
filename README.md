@@ -156,8 +156,9 @@ The viewer is a React + TypeScript SPA that renders architecture diagrams on a c
 
 - **Navigable views** — click group nodes to drill in, breadcrumb to navigate up, browser back button works
 - **Pan and zoom** — mouse drag to pan, scroll to zoom
-- **Selection** — click a node to see its connectors in the side panel
-- **External stubs** — dashed rays showing connections to elements outside the current view
+- **Selection** — click a node to see its connectors in the side panel and open a cross-hierarchy neighborhood of directly connected components
+- **Component neighborhoods** — focused views show the selected component, all direct neighbors, and every interconnection among those displayed components
+- **External stubs** — dashed rays show connections outside the current view; click an aggregated stub to expand its individual targets
 - **Collapsible side panel** — sortable connector table with direction, target, module, relationship, view columns
 - **Transition animations** — smooth camera transitions when drilling in/out
 

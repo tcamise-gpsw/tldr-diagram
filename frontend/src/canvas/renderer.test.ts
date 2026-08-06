@@ -423,7 +423,7 @@ describe('renderer — drawExternalStubs', () => {
   it('draws a stroke and label for each stub', () => {
     const ctx = createMockCtx();
     const stubs: ExternalStub[] = [
-      { nodeRef: 'a', targetGroup: 'NetworkLayer', count: 3, direction: 'outbound', angle: 0,
+      { groupKey: 'a|network|outbound', nodeRef: 'a', targetGroup: 'NetworkLayer', count: 3, direction: 'outbound', angle: 0,
         nodeX: 0, nodeY: 100, nodeWidth: 220, nodeHeight: 80 },
     ];
     drawExternalStubs(ctx as never, stubs, emptyState());
@@ -434,7 +434,7 @@ describe('renderer — drawExternalStubs', () => {
   it('draws label for inbound stubs', () => {
     const ctx = createMockCtx();
     const stubs: ExternalStub[] = [
-      { nodeRef: 'a', targetGroup: 'AuthService', count: 2, direction: 'inbound', angle: Math.PI,
+      { groupKey: 'a|auth|inbound', nodeRef: 'a', targetGroup: 'AuthService', count: 2, direction: 'inbound', angle: Math.PI,
         nodeX: 0, nodeY: 100, nodeWidth: 220, nodeHeight: 80 },
     ];
     drawExternalStubs(ctx as never, stubs, emptyState());
@@ -444,7 +444,7 @@ describe('renderer — drawExternalStubs', () => {
   it('uses red/green color when the stub node is selected', () => {
     const ctx = createMockCtx();
     const stubs: ExternalStub[] = [
-      { nodeRef: 'a', targetGroup: 'G', count: 1, direction: 'outbound', angle: 0,
+      { groupKey: 'a|g|outbound', nodeRef: 'a', targetGroup: 'G', count: 1, direction: 'outbound', angle: 0,
         nodeX: 0, nodeY: 100, nodeWidth: 220, nodeHeight: 80 },
     ];
     drawExternalStubs(ctx as never, stubs, { ...emptyState(), selectedNode: 'a' });
@@ -455,7 +455,7 @@ describe('renderer — drawExternalStubs', () => {
   it('uses CONNECTOR_STUB color for non-selected stubs', () => {
     const ctx = createMockCtx();
     const stubs: ExternalStub[] = [
-      { nodeRef: 'a', targetGroup: 'G', count: 1, direction: 'outbound', angle: 0,
+      { groupKey: 'a|g|outbound', nodeRef: 'a', targetGroup: 'G', count: 1, direction: 'outbound', angle: 0,
         nodeX: 0, nodeY: 100, nodeWidth: 220, nodeHeight: 80 },
     ];
     drawExternalStubs(ctx as never, stubs, emptyState());
@@ -466,9 +466,9 @@ describe('renderer — drawExternalStubs', () => {
   it('resets setLineDash([]) after each stub (no dash bleed)', () => {
     const ctx = createMockCtx();
     const stubs: ExternalStub[] = [
-      { nodeRef: 'a', targetGroup: 'G1', count: 1, direction: 'outbound', angle: 0,
+      { groupKey: 'a|g1|outbound', nodeRef: 'a', targetGroup: 'G1', count: 1, direction: 'outbound', angle: 0,
         nodeX: 0, nodeY: 100, nodeWidth: 220, nodeHeight: 80 },
-      { nodeRef: 'b', targetGroup: 'G2', count: 2, direction: 'inbound', angle: Math.PI,
+      { groupKey: 'b|g2|inbound', nodeRef: 'b', targetGroup: 'G2', count: 2, direction: 'inbound', angle: Math.PI,
         nodeX: 0, nodeY: 200, nodeWidth: 220, nodeHeight: 80 },
     ];
     drawExternalStubs(ctx as never, stubs, emptyState());
@@ -486,7 +486,7 @@ describe('renderer — drawExternalStubs', () => {
     // angle=0 → cosA=1, sinA=0 → edgeDist=halfW=110
     // startX = 500 + 1*(110+6) = 616, startY = 300
     const stubs: ExternalStub[] = [
-      { nodeRef: 'n', targetGroup: 'G', count: 1, direction: 'outbound', angle: 0,
+      { groupKey: 'n|g|outbound', nodeRef: 'n', targetGroup: 'G', count: 1, direction: 'outbound', angle: 0,
         nodeX: 500, nodeY: 300, nodeWidth: 220, nodeHeight: 80 },
     ];
     drawExternalStubs(ctx as never, stubs, emptyState());

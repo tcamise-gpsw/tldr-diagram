@@ -1,4 +1,5 @@
 import { LayoutNode } from './layout';
+import { ExternalStub, getExternalStubGeometry } from './stubs';
 
 export const PAN_THRESHOLD = 5;
 
@@ -41,6 +42,29 @@ export function hitTestGroupIcon(worldX: number, worldY: number, nodes: LayoutNo
     if (dx * dx + dy * dy <= 256) { // 16^2
       return node.ref;
     }
+  }
+  return null;
+}
+
+export function hitTestExternalStubs(
+  worldX: number,
+  worldY: number,
+  stubs: ExternalStub[],
+  tolerance = 8,
+): string | null {
+  for (let index = stubs.length - 1; index >= 0; index--) {
+    const stub = stubs[index];
+    const { startX, startY, endX, endY } = getExternalStubGeometry(stub);
+    const dx = endX - startX;
+    const dy = endY - startY;
+    const lengthSquared = dx * dx + dy * dy;
+    const projection = lengthSquared === 0
+      ? 0
+      : Math.max(0, Math.min(1, ((worldX - startX) * dx + (worldY - startY) * dy) / lengthSquared));
+    const closestX = startX + projection * dx;
+    const closestY = startY + projection * dy;
+    const distanceSquared = (worldX - closestX) ** 2 + (worldY - closestY) ** 2;
+    if (distanceSquared <= tolerance * tolerance) return stub.groupKey;
   }
   return null;
 }

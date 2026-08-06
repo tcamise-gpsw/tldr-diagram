@@ -3,6 +3,7 @@ import logoUrl from './assets/logo.png';
 import { loadDiagramData, getViewElements, getViewConnectors, getDescendantRefs } from './data/loader';
 import { DiagramData } from './data/types';
 import { computeExternalStubs } from './canvas/stubs';
+import { computeComponentNeighborhood } from './data/neighborhood';
 import { getOrComputeLayout, invalidateLayout } from './canvas/layout';
 import { CanvasViewport } from './canvas/CanvasViewport';
 import { Toolbar } from './components/Toolbar';
@@ -21,6 +22,7 @@ export const App: React.FC = () => {
   const [hoveredGroupIcon, setHoveredGroupIcon] = useState<string | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [showExternalStubs, setShowExternalStubs] = useState(true);
+  const [focusedNode, setFocusedNode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,6 +66,18 @@ export const App: React.FC = () => {
 
   const handleSelect = useCallback((ref: string | null) => {
     setSelectedNode(ref);
+  }, []);
+
+
+  const handleShowNeighborhood = useCallback((ref: string) => {
+    setFocusedNode(ref);
+    setSelectedNode(ref);
+    invalidateLayout(`neighborhood:${ref}`);
+    window.history.pushState({ neighborhood: ref }, '');
+  }, []);
+
+  const handleExitNeighborhood = useCallback(() => {
+    setFocusedNode(null);
   }, []);
 
   const handleEnterGroup = useCallback(
@@ -133,12 +147,16 @@ export const App: React.FC = () => {
 
   const handleGoUp = useCallback(() => {
     if (!data) return;
+    if (focusedNode) {
+      handleExitNeighborhood();
+      return;
+    }
     if (navigationStack.length <= 1) {
       setSelectedNode(null);
       return;
     }
     handleGoToLevel(navigationStack.length - 2);
-  }, [data, navigationStack, handleGoToLevel]);
+  }, [data, focusedNode, handleExitNeighborhood, navigationStack, handleGoToLevel]);
 
   const handleNavigateToElement = useCallback((targetRef: string) => {
     if (!data) return;
@@ -205,19 +223,24 @@ export const App: React.FC = () => {
     return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>Error: {error}</div>;
   }
 
-  const viewElements = getViewElements(data, currentView);
-  const viewConnectors = getViewConnectors(data, currentView);
-  const layout = getOrComputeLayout(currentView, viewElements, viewConnectors);
+  const neighborhood = focusedNode
+    ? computeComponentNeighborhood(data, focusedNode)
+    : null;
+  const viewElements = neighborhood?.elements ?? getViewElements(data, currentView);
+  const viewConnectors = neighborhood?.connectors ?? getViewConnectors(data, currentView);
+  const layoutKey = focusedNode ? `neighborhood:${focusedNode}` : currentView;
+  const layout = getOrComputeLayout(layoutKey, viewElements, viewConnectors, focusedNode ? 'LR' : 'BT');
 
-  // Compute external stubs:
-  // - Toggle ON: show all stubs
-  // - Toggle OFF + node selected: show only the selected node's stubs
-  // - Toggle OFF + no selection: hide all stubs
-  const externalStubs = showExternalStubs
-    ? computeExternalStubs(data, currentView, layout)
-    : selectedNode
-      ? computeExternalStubs(data, currentView, layout).filter(s => s.nodeRef === selectedNode)
-      : [];
+  // Neighborhoods already contain every direct edge. Hierarchical views use
+  // expandable stubs for connections beyond their current boundary.
+  const externalStubs = focusedNode
+    ? []
+    : showExternalStubs
+      ? computeExternalStubs(data, currentView, layout, selectedNode ?? undefined)
+      : selectedNode
+        ? computeExternalStubs(data, currentView, layout, selectedNode)
+            .filter((stub) => stub.nodeRef === selectedNode)
+        : [];
 
   return (
     <div className="app">
@@ -238,6 +261,14 @@ export const App: React.FC = () => {
               </React.Fragment>
             );
           })}
+          {focusedNode && (
+            <>
+              <span className="breadcrumb-separator">/</span>
+              <span className="breadcrumb-item active">
+                Neighborhood: {data.elements.get(focusedNode)?.name ?? focusedNode}
+              </span>
+            </>
+          )}
         </div>
 
         <img src={logoUrl} alt="TL;DR" className="app-logo" />
@@ -288,6 +319,9 @@ export const App: React.FC = () => {
           currentView={currentView}
           data={data}
           onNavigateToElement={handleNavigateToElement}
+          focusedNode={focusedNode}
+          onShowNeighborhood={handleShowNeighborhood}
+          onExitNeighborhood={handleExitNeighborhood}
           collapsed={panelCollapsed}
           onSetCollapsed={setPanelCollapsed}
         />

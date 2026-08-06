@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { hitTestNodes, isDrag, PAN_THRESHOLD, hitTestGroupIcon } from './hitTest';
+import { hitTestNodes, isDrag, PAN_THRESHOLD, hitTestGroupIcon, hitTestExternalStubs } from './hitTest';
+import { ExternalStub } from './stubs';
 import { LayoutNode } from './layout';
 
 describe('Hit Testing Module', () => {
@@ -101,5 +102,28 @@ describe('hitTestGroupIcon', () => {
       { ref: 'leaf1', x: 100, y: 100, width: 100, height: 100, isGroup: false }
     ];
     expect(hitTestGroupIcon(134, 66, nodes)).toBeNull();
+  });
+});
+
+describe('hitTestExternalStubs', () => {
+  const stub: ExternalStub = {
+    groupKey: 'inside|Ports|outbound',
+    nodeRef: 'inside',
+    targetGroup: 'Ports',
+    direction: 'outbound',
+    count: 2,
+    angle: 0,
+    nodeX: 100,
+    nodeY: 100,
+    nodeWidth: 100,
+    nodeHeight: 60,
+  };
+
+  it('returns the group key when the external arrow is clicked', () => {
+    expect(hitTestExternalStubs(185, 100, [stub])).toBe(stub.groupKey);
+  });
+
+  it('returns null away from external arrows', () => {
+    expect(hitTestExternalStubs(185, 140, [stub])).toBeNull();
   });
 });

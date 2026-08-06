@@ -1,6 +1,6 @@
 import { ViewLayout, LayoutNode, LayoutEdge } from './layout';
 import { CameraState } from './camera';
-import { ExternalStub } from './stubs';
+import { ExternalStub, getExternalStubGeometry } from './stubs';
 import { Element } from '../data/types';
 import * as theme from '../theme';
 
@@ -22,8 +22,6 @@ const CONNECTOR_HIGHLIGHTED_WIDTH = 2.5;
 const NODE_SELECTED_STROKE_WIDTH = 3;
 const NODE_DEFAULT_STROKE_WIDTH = 1.5;
 
-const STUB_LENGTH = 50;
-const STUB_GAP = 6;
 const STUB_HIGHLIGHTED_WIDTH = 2.5;
 const STUB_DEFAULT_WIDTH = 1.5;
 
@@ -327,25 +325,7 @@ export function drawExternalStubs(
 
     const cosA = Math.cos(stub.angle);
     const sinA = Math.sin(stub.angle);
-
-    // Compute the distance from the node center to the edge along the stub direction
-    // using a safe AABB intersection.
-    const halfW = stub.nodeWidth / 2;
-    const halfH = stub.nodeHeight / 2;
-    let edgeDist: number;
-    if (Math.abs(sinA) < 1e-10) {
-      edgeDist = halfW;
-    } else if (Math.abs(cosA) < 1e-10) {
-      edgeDist = halfH;
-    } else {
-      edgeDist = Math.min(halfW / Math.abs(cosA), halfH / Math.abs(sinA));
-    }
-
-    // Start just outside the node boundary; end STUB_LENGTH further out
-    const startX = stub.nodeX + cosA * (edgeDist + STUB_GAP);
-    const startY = stub.nodeY + sinA * (edgeDist + STUB_GAP);
-    const endX = stub.nodeX + cosA * (edgeDist + STUB_GAP + STUB_LENGTH);
-    const endY = stub.nodeY + sinA * (edgeDist + STUB_GAP + STUB_LENGTH);
+    const { startX, startY, endX, endY } = getExternalStubGeometry(stub);
 
     // Dashed line
     ctx.strokeStyle = color;

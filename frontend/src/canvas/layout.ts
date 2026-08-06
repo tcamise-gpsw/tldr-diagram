@@ -27,13 +27,17 @@ export interface ViewLayout {
 
 const layoutCache = new Map<string, ViewLayout>();
 
-export function computeLayout(elements: Element[], connectors: Connector[]): ViewLayout {
+export function computeLayout(
+  elements: Element[],
+  connectors: Connector[],
+  rankdir: 'BT' | 'LR' = 'BT',
+): ViewLayout {
   if (elements.length === 0) {
     return { nodes: [], edges: [], width: 0, height: 0 };
   }
 
   const g = new dagre.graphlib.Graph();
-  g.setGraph({ rankdir: 'BT', nodesep: 60, ranksep: 80, edgesep: 20 });
+  g.setGraph({ rankdir, nodesep: 60, ranksep: 80, edgesep: 20 });
   g.setDefaultEdgeLabel(() => ({}));
 
   // Add nodes (use ref as node ID, not name)
@@ -112,12 +116,17 @@ export function computeLayout(elements: Element[], connectors: Connector[]): Vie
   return { nodes, edges, width, height };
 }
 
-export function getOrComputeLayout(viewRef: string, elements: Element[], connectors: Connector[]): ViewLayout {
+export function getOrComputeLayout(
+  viewRef: string,
+  elements: Element[],
+  connectors: Connector[],
+  rankdir: 'BT' | 'LR' = 'BT',
+): ViewLayout {
   if (layoutCache.has(viewRef)) {
     return layoutCache.get(viewRef)!;
   }
 
-  const layout = computeLayout(elements, connectors);
+  const layout = computeLayout(elements, connectors, rankdir);
   layoutCache.set(viewRef, layout);
   return layout;
 }

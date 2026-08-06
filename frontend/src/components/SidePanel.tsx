@@ -7,6 +7,9 @@ interface SidePanelProps {
   currentView: string;
   data: DiagramData;
   onNavigateToElement?: (ref: string) => void;
+  focusedNode?: string | null;
+  onShowNeighborhood?: (ref: string) => void;
+  onExitNeighborhood?: () => void;
   collapsed: boolean;
   onSetCollapsed: (collapsed: boolean) => void;
 }
@@ -16,6 +19,9 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   currentView,
   data,
   onNavigateToElement,
+  focusedNode = null,
+  onShowNeighborhood,
+  onExitNeighborhood,
   collapsed,
   onSetCollapsed,
 }) => {
@@ -105,6 +111,19 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         <p className="panel-description">{element.description || element.summary}</p>
         {element.technology && <p className="panel-tech">Tech: {element.technology}</p>}
       </div>
+      {!element.has_view && onShowNeighborhood && (
+        <div className="panel-section">
+          {focusedNode === selectedNode ? (
+            <button className="panel-button" onClick={onExitNeighborhood}>
+              Exit Neighborhood
+            </button>
+          ) : (
+            <button className="panel-button" onClick={() => onShowNeighborhood(selectedNode)}>
+              Show Neighborhood
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="panel-section table-section">
         <h4>Connectors</h4>

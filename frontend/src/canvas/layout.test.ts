@@ -118,6 +118,15 @@ describe('Layout Module', () => {
       expect(groupNode?.isGroup).toBe(true);
       expect(elemNode?.isGroup).toBe(false);
     });
+
+    it('supports a left-to-right layout for cross-layer neighborhoods', () => {
+      const layout = computeLayout(createTestElements(), createTestConnectors(), 'LR');
+      const positions = new Map(layout.nodes.map((node) => [node.ref, node]));
+
+      expect(positions.get('elem-a')?.x).toBeGreaterThan(positions.get('elem-b')!.x);
+      expect(positions.get('elem-b')?.x).toBeGreaterThan(positions.get('elem-c')!.x);
+      expect(layout.width).toBeGreaterThan(layout.height);
+    });
   });
 
   describe('getOrComputeLayout', () => {
