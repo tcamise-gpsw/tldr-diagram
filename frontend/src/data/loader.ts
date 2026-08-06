@@ -1,12 +1,13 @@
 import { DiagramData, Element, Connector, ViewTree, ViewNode, RawElement, RawConnector } from './types';
 import * as yaml from 'js-yaml';
 
-export async function loadDiagramData(): Promise<DiagramData> {
-  const [elementsYaml, connectorsYaml] = await Promise.all([
+export async function loadDiagramData(): Promise<{ data: DiagramData; sourceRoot: string | null }> {
+  const [elementsYaml, connectorsYaml, config] = await Promise.all([
     fetch('/elements.yaml').then((r) => r.text()),
     fetch('/connectors.yaml').then((r) => r.text()),
+    fetch('/config.json').then((r) => r.json()).catch(() => null),
   ]);
-  return parseDiagramData(elementsYaml, connectorsYaml);
+  return { data: parseDiagramData(elementsYaml, connectorsYaml), sourceRoot: config?.sourceRoot ?? null };
 }
 
 export function parseDiagramData(elementsYaml: string, connectorsYaml: string): DiagramData {

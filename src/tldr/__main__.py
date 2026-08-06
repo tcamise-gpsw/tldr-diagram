@@ -101,6 +101,7 @@ def _run_serve(args: argparse.Namespace) -> None:
         frontend_dist=frontend_dist,
         port=args.port,
         open_browser=not args.no_open,
+        source_root=args.source_root.resolve() if args.source_root else None,
     )
 
 
@@ -178,6 +179,12 @@ def main() -> None:
         type=int,
         default=8060,
         help="Port to listen on (default: 8060)",
+    )
+    serve_parser.add_argument(
+        "--source-root",
+        type=Path,
+        default=None,
+        help="Absolute repo root prepended to file_path for IDE navigation",
     )
     serve_parser.add_argument(
         "--no-open",

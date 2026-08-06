@@ -14,6 +14,7 @@ import './styles.css';
 
 export const App: React.FC = () => {
   const [data, setData] = useState<DiagramData | null>(null);
+  const [sourceRoot, setSourceRoot] = useState<string | null>(null);
   const [navigationStack, setNavigationStack] = useState<string[]>(['root']);
   const currentView = navigationStack[navigationStack.length - 1];
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
@@ -35,8 +36,9 @@ export const App: React.FC = () => {
   // Load diagram data on mount
   useEffect(() => {
     loadDiagramData()
-      .then((loadedData) => {
+      .then(({ data: loadedData, sourceRoot: root }) => {
         setData(loadedData);
+        setSourceRoot(root);
         setLoading(false);
       })
       .catch((err) => {
@@ -328,6 +330,7 @@ export const App: React.FC = () => {
           selectedNode={selectedNode || currentView}
           currentView={currentView}
           data={data}
+          sourceRoot={sourceRoot}
           onNavigateToElement={handleNavigateToElement}
           focusedNode={focusedNode}
           onShowFocus={handleShowFocus}

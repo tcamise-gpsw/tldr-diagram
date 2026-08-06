@@ -294,6 +294,18 @@ body {
   color: #484f58;
 }
 
+/* Source link — muted blue, styled as button */
+.panel-button--source {
+  display: inline-block;
+  text-decoration: none;
+  border-color: #388bfd;
+  color: #388bfd;
+}
+
+.panel-button--source:hover {
+  background-color: rgba(56, 139, 253, 0.15);
+}
+
 .tooltip {
   position: fixed;
   background-color: #1c2128;

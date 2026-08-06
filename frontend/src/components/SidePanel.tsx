@@ -6,6 +6,7 @@ interface SidePanelProps {
   selectedNode: string | null;
   currentView: string;
   data: DiagramData;
+  sourceRoot?: string | null;
   onNavigateToElement?: (ref: string) => void;
   focusedNode?: string | null;
   onShowFocus?: (ref: string) => void;
@@ -18,6 +19,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   selectedNode,
   currentView,
   data,
+  sourceRoot,
   onNavigateToElement,
   focusedNode = null,
   onShowFocus,
@@ -111,6 +113,16 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         <p className="panel-description">{element.description || element.summary}</p>
         {element.technology && <p className="panel-tech">Tech: {element.technology}</p>}
       </div>
+      {sourceRoot && element.file_path && (
+        <div className="panel-section">
+          <a
+            className="panel-button panel-button--source"
+            href={`idea://open?file=${sourceRoot}/${element.file_path}&line=1`}
+          >
+            Go to Source
+          </a>
+        </div>
+      )}
       {onShowFocus && !element.has_view && (
         <div className="panel-section">
           <button
