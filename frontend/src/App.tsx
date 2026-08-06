@@ -23,6 +23,9 @@ export const App: React.FC = () => {
   });
   const currentView = navigationStack[navigationStack.length - 1];
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  // Capture raw URL params once at mount — before the sync effect wipes them
+  const [initialSelected] = useState(() => new URLSearchParams(window.location.search).get('selected'));
+  const [initialFocus] = useState(() => new URLSearchParams(window.location.search).get('focus'));
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [hoveredGroupIcon, setHoveredGroupIcon] = useState<string | null>(null);
@@ -46,14 +49,11 @@ export const App: React.FC = () => {
         setData(loadedData);
         setSourceRoot(root);
         setLoading(false);
-        // Resolve ?selected and ?focus from element names → full refs
-        const params = new URLSearchParams(window.location.search);
-        const selectedName = params.get('selected');
-        const focusName = params.get('focus');
+        // Resolve initial URL params (captured before sync effect wiped the URL)
         const byName = (name: string) =>
           [...loadedData.elements.values()].find((e) => e.name === name)?.ref ?? null;
-        if (selectedName) setSelectedNode(byName(selectedName));
-        if (focusName) setFocusedNode(byName(focusName));
+        if (initialSelected) setSelectedNode(byName(initialSelected));
+        if (initialFocus) setFocusedNode(byName(initialFocus));
       })
       .catch((err) => {
         setError(err.message);
