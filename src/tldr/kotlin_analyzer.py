@@ -26,6 +26,10 @@ _CLASS_DECL_TYPES = {"class_declaration"}
 # The keyword nodes that tell us what kind of declaration it is
 _KIND_KEYWORDS = {"class", "interface", "object"}
 
+# Kind marker for top-level Koin `Module` vals (DI composition manifests). Not
+# classes/interfaces, but retained so their value-references become explicit edges.
+_MODULE_VAL_KIND = "di_module"
+
 
 @dataclass
 class AnalyzedFile:
@@ -106,6 +110,62 @@ def _collect_user_types(node: tree_sitter.Node, types: set[str]) -> None:
             _collect_user_types(child, types)
 
 
+def _find_child(node: tree_sitter.Node, type_name: str) -> tree_sitter.Node | None:
+    """Return the first direct child of `node` with the given type."""
+    for child in node.children:
+        if child.type == type_name:
+            return child
+    return None
+
+
+def _is_koin_module_property(prop: tree_sitter.Node) -> bool:
+    """True if a property_declaration binds a Koin `Module` val.
+
+    Matches either an explicit `: Module` type annotation or a `module { }`
+    initializer call, e.g. `val dataModule: Module = module { ... }`.
+    """
+    var_decl = _find_child(prop, "variable_declaration")
+    if var_decl is not None:
+        user_type = _find_child(var_decl, "user_type")
+        if user_type is not None and _extract_identifier_text(user_type) == "Module":
+            return True
+    call = _find_child(prop, "call_expression")
+    if call is not None and _extract_identifier_text(call) == "module":
+        return True
+    return False
+
+
+def _extract_module_vals(
+    node: tree_sitter.Node,
+    file_path: str,
+    result: AnalyzedFile,
+) -> None:
+    """Emit top-level Koin `Module` vals as elements.
+
+    These are DI composition manifests (e.g. `dataModule`, `servicesModule`).
+    They are referenced by value, not by type, so type-ref analysis can't see the
+    dependency from a composition root that wires them via `modules(...)`. Emitting
+    them as elements lets those references become explicit cross-module edges.
+    """
+    for child in node.children:
+        if child.type != "property_declaration":
+            continue
+        if not _is_koin_module_property(child):
+            continue
+        var_decl = _find_child(child, "variable_declaration")
+        name = _extract_identifier_text(var_decl) if var_decl is not None else None
+        if not name:
+            continue
+        result.elements.append(
+            AnalyzedElement(
+                name=name,
+                kind=_MODULE_VAL_KIND,
+                file_path=file_path,
+                line=child.start_point[0] + 1,
+            )
+        )
+
+
 def parse_file(source: bytes, file_path: str) -> AnalyzedFile:
     """Parse a single Kotlin file and extract elements + type references.
 
@@ -142,6 +202,9 @@ def parse_file(source: bytes, file_path: str) -> AnalyzedFile:
 
     # Pass 2: Extract class/interface declarations (top-level and nested)
     _extract_elements(root, file_path, result)
+
+    # Pass 3: Extract Koin Module vals (DI composition manifests)
+    _extract_module_vals(root, file_path, result)
 
     return result
 
@@ -361,6 +424,39 @@ def analyze_sources(
             for type_name in elem.type_refs:
                 target_key = _resolve_type(type_name, af, qualified_to_key, name_to_keys)
                 if target_key and target_key != source_key:
+                    raw_connectors.append({
+                        "source": source_key,
+                        "target": target_key,
+                        "direction": "forward",
+                        "style": "smoothstep",
+                        "relationship": "dependency",
+                    })
+                    connector_count += 1
+
+    # Koin Module-val aggregation edges.
+    # A class that imports a top-level `Module` val (e.g. `dataModule`) depends on
+    # the module that DEFINES it. Type-ref analysis misses this because the reference
+    # is a value, not a type — so composition roots that wire modules via `modules(...)`
+    # would otherwise show no edge to the modules they load. Emit an explicit edge.
+    module_val_keys = {
+        key for key, e in raw_elements.items() if e.get("kind") == _MODULE_VAL_KIND
+    }
+    if module_val_keys:
+        for af in analyzed_files:
+            referenced = {
+                qualified_to_key[q]
+                for q in af.imports.values()
+                if qualified_to_key.get(q) in module_val_keys
+            }
+            if not referenced:
+                continue
+            for elem in af.elements:
+                if elem.kind == _MODULE_VAL_KIND:
+                    continue
+                source_key = f"{elem.file_path}::{elem.name}"
+                for target_key in referenced:
+                    if target_key == source_key:
+                        continue
                     raw_connectors.append({
                         "source": source_key,
                         "target": target_key,

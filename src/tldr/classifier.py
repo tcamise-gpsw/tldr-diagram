@@ -9,7 +9,7 @@ from __future__ import annotations
 from .models import ArchTree, Element, Rule
 
 # Kinds to retain as leaf elements in the output
-RETAINED_KINDS = {"class", "interface"}
+RETAINED_KINDS = {"class", "interface", "di_module"}
 
 
 def extract_package_path(file_path: str, source_prefix: str, package_marker: str) -> tuple[str, str] | None:

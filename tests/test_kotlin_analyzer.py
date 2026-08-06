@@ -4,6 +4,7 @@ import pytest
 
 from tldr.kotlin_analyzer import (
     parse_file,
+    analyze_sources,
     _should_exclude,
     _collect_user_types,
     _PARSER,
@@ -282,3 +283,62 @@ class TestCollectUserTypes:
 """)
         assert "OuterDep" in types
         assert "NestedDep" not in types
+
+
+class TestParseFileModuleVals:
+    """Tests for Koin `Module` val detection (DI composition manifests)."""
+
+    def test_detects_module_val_by_type_annotation(self):
+        source = b"val dataModule: Module = module { single { Foo() } }\n"
+        result = parse_file(source, "DataModule.kt")
+        mods = [e for e in result.elements if e.kind == "di_module"]
+        assert [e.name for e in mods] == ["dataModule"]
+
+    def test_detects_module_val_by_initializer(self):
+        # No explicit `: Module` type; detected via the `module { }` initializer.
+        source = b"val servicesModule = module { single { Bar() } }\n"
+        result = parse_file(source, "ServicesModule.kt")
+        assert any(
+            e.kind == "di_module" and e.name == "servicesModule"
+            for e in result.elements
+        )
+
+    def test_plain_val_and_object_are_not_module_vals(self):
+        source = b"val count = 5\nobject Thing\nclass Real"
+        result = parse_file(source, "Misc.kt")
+        assert all(e.kind != "di_module" for e in result.elements)
+        # A real class in the same file is still detected normally.
+        assert any(e.name == "Real" and e.kind == "class" for e in result.elements)
+
+
+class TestModuleValConnectors:
+    """A class importing a Koin `Module` val gets an edge to that val's module."""
+
+    def test_module_val_import_creates_edge(self, tmp_path):
+        repo = tmp_path
+        src = repo / "src"
+        (src / "data").mkdir(parents=True)
+        (src / "api").mkdir(parents=True)
+        (src / "data" / "DataModule.kt").write_bytes(
+            b"package com.example.data\n"
+            b"import org.koin.core.module.Module\n"
+            b"import org.koin.dsl.module\n"
+            b"val dataModule: Module = module { }\n"
+        )
+        (src / "api" / "Sdk.kt").write_bytes(
+            b"package com.example.api\n"
+            b"import com.example.data.dataModule\n"
+            b"class Sdk { fun wire() { modules(dataModule) } }\n"
+        )
+
+        result = analyze_sources(repo_root=repo, source_root=src)
+
+        # The Module val is retained as a di_module element.
+        assert any(e["kind"] == "di_module" for e in result.raw_elements.values())
+        # Sdk -> dataModule edge exists despite the reference being a value, not a type.
+        sdk_key = "src/api/Sdk.kt::Sdk"
+        dm_key = "src/data/DataModule.kt::dataModule"
+        assert any(
+            c["source"] == sdk_key and c["target"] == dm_key
+            for c in result.raw_connectors
+        )
