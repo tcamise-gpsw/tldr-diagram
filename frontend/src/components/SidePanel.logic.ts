@@ -3,7 +3,7 @@ import { getDescendantRefs } from '../data/loader';
 
 const RELATIONSHIP_VERBS: Record<string, string> = {
   dependency: 'depends on',
-  inheritance: 'inherits',
+  inheritance: 'implements',
 };
 
 export interface ConnectorRow {

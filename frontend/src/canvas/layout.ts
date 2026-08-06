@@ -78,7 +78,7 @@ export function computeLayout(elements: Element[], connectors: Connector[]): Vie
   // Extract edges with waypoints
   const RELATIONSHIP_VERBS: Record<string, string> = {
     dependency: 'depends on',
-    inheritance: 'inherits',
+    inheritance: 'implements',
   };
   const edges: LayoutEdge[] = [];
   g.edges().forEach((edge) => {
