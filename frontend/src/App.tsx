@@ -169,6 +169,7 @@ export const App: React.FC = () => {
 
     // Target is in the current view — drill in or select
     if (targetParent === currentView) {
+      setFocusedNode(null);
       if (targetElement.has_view) {
         handleEnterGroup(targetRef);
       } else {
@@ -188,6 +189,7 @@ export const App: React.FC = () => {
     }
     path.unshift('root');
 
+    setFocusedNode(null);
     setNavigationStack(path);
     setSelectedNode(targetRef);
     invalidateLayout(targetParent);
