@@ -13,6 +13,43 @@ import yaml
 from .models import ArchTree, GroupNode, Module, Rule, first_sentence
 
 
+def _materialize_rule_group(tree: ArchTree, ref: str) -> None:
+    """Turn a configured auto-group override into a rule-targetable group.
+
+    Parentless group entries normally customize groups created by auto-splitting.
+    When a rule targets one directly, its generated ``parent--segment`` ref also
+    describes where it belongs. Materialize that group and any configured
+    ancestors so manual grouping works even when auto-splitting is disabled.
+    """
+    if ref in tree.groups or ref in tree.modules:
+        return
+
+    metadata = tree.group_overrides.get(ref)
+    if metadata is None:
+        return
+
+    parent_ref, separator, segment = ref.rpartition("--")
+    if not separator:
+        return
+
+    if parent_ref not in tree.groups and parent_ref not in tree.modules:
+        _materialize_rule_group(tree, parent_ref)
+    if parent_ref not in tree.groups and parent_ref not in tree.modules:
+        return
+
+    description = metadata.get("description", "")
+    default_name = segment.replace("-", " ").replace("_", " ").title()
+    tree.groups[ref] = GroupNode(
+        ref=ref,
+        name=metadata.get("name") or default_name,
+        description=description,
+        summary=metadata.get("summary") or first_sentence(description),
+        docs=metadata.get("docs", ""),
+        parent_ref=parent_ref,
+    )
+    del tree.group_overrides[ref]
+
+
 def load_config(config_path: Path) -> ArchTree:
     """Load modules, groups, and routing rules from groups.yaml into an ArchTree.
 
@@ -58,7 +95,7 @@ def load_config(config_path: Path) -> ArchTree:
         if parent is None:
             tree.group_overrides[ref] = {
                 k: group[k]
-                for k in ("name", "summary", "description", "docs")
+                for k in ("name", "summary", "description", "docs", "inline")
                 if k in group
             }
             continue
@@ -81,6 +118,12 @@ def load_config(config_path: Path) -> ArchTree:
             parent_ref=parent,
         )
 
+    # A rule may target a configured auto-group override. The generated ref
+    # encodes its parent (for example, data--camera--commands belongs under
+    # data--camera), so materialize the target and its configured ancestors.
+    for rule in raw_rules:
+        _materialize_rule_group(tree, rule["group"])
+
     # Validate no circular parent references
     for ref in tree.groups:
         visited: set[str] = set()
@@ -95,7 +138,8 @@ def load_config(config_path: Path) -> ArchTree:
             visited.add(current)
             current = tree.groups[current].parent_ref
 
-    # Rules — a rule may target a module OR a structural group.
+    # Rules may target modules, explicit structural groups, or configured
+    # parentless groups materialized above from their generated refs.
     valid_targets = set(tree.groups.keys()) | set(tree.modules.keys())
     seen_rule_keys: dict[tuple[str, str], int] = {}
 

@@ -105,6 +105,28 @@ class Second
         assert result.elements[0].line == 3
         assert result.elements[1].line == 5
 
+    def test_private_class_excluded(self):
+        source = b"private class Impl"
+        result = parse_file(source, "src/Impl.kt")
+        assert len(result.elements) == 0
+
+    def test_private_interface_excluded(self):
+        source = b"private interface Contract"
+        result = parse_file(source, "src/Contract.kt")
+        assert len(result.elements) == 0
+
+    def test_internal_class_included(self):
+        source = b"internal class Worker"
+        result = parse_file(source, "src/Worker.kt")
+        assert len(result.elements) == 1
+        assert result.elements[0].name == "Worker"
+
+    def test_private_sibling_excluded_public_kept(self):
+        source = b"class Public\nprivate class Hidden"
+        result = parse_file(source, "src/Mixed.kt")
+        assert len(result.elements) == 1
+        assert result.elements[0].name == "Public"
+
 
 class TestParseFileTypeRefs:
     """Tests for per-class type reference collection."""
@@ -284,6 +306,93 @@ class TestCollectUserTypes:
 """)
         assert "OuterDep" in types
         assert "NestedDep" not in types
+
+
+class TestImportedBodyRefs:
+    """Identifiers used in function bodies, object access, etc. that match imports."""
+
+    def test_constructor_call_in_function_body(self):
+        source = b"""import com.example.SetShutterCommand
+
+class DefaultGateway {
+    fun execute(on: Boolean) {
+        sender.send(SetShutterCommand(on))
+    }
+}
+"""
+        result = parse_file(source, "test.kt")
+        assert "SetShutterCommand" in result.elements[0].type_refs
+
+    def test_companion_object_access(self):
+        source = b"""import com.example.DeviceResponse
+
+class DefaultGateway {
+    fun check(r: Any) {
+        if (r == DeviceResponse.NotSupported) return
+    }
+}
+"""
+        result = parse_file(source, "test.kt")
+        assert "DeviceResponse" in result.elements[0].type_refs
+
+    def test_sealed_class_branch(self):
+        source = b"""import com.example.ConnectionState
+
+class Manager {
+    fun handle(s: Any) {
+        if (s is ConnectionState.Connected) doWork()
+    }
+}
+"""
+        result = parse_file(source, "test.kt")
+        assert "ConnectionState" in result.elements[0].type_refs
+
+    def test_non_imported_identifier_excluded(self):
+        """Identifiers without a matching import are not added."""
+        source = b"""class Foo {
+    fun run() { localHelper() }
+}
+"""
+        result = parse_file(source, "test.kt")
+        assert "localHelper" not in result.elements[0].type_refs
+
+    def test_import_ref_scoped_to_class_not_sibling(self):
+        """Import used only in ClassA's body must not appear in ClassB's refs."""
+        source = b"""import com.example.Alpha
+import com.example.Beta
+
+class ClassA {
+    fun run() { Alpha.create() }
+}
+
+class ClassB {
+    fun run() { Beta.process() }
+}
+"""
+        result = parse_file(source, "test.kt")
+        a = next(e for e in result.elements if e.name == "ClassA")
+        b = next(e for e in result.elements if e.name == "ClassB")
+        assert "Alpha" in a.type_refs
+        assert "Beta" not in a.type_refs
+        assert "Beta" in b.type_refs
+        assert "Alpha" not in b.type_refs
+
+    def test_nested_class_body_not_attributed_to_outer(self):
+        """Import used only in nested class must not appear in outer class refs."""
+        source = b"""import com.example.OuterDep
+import com.example.InnerDep
+
+class Outer {
+    fun run() { OuterDep.call() }
+    class Inner {
+        fun run() { InnerDep.call() }
+    }
+}
+"""
+        result = parse_file(source, "test.kt")
+        outer = next(e for e in result.elements if e.name == "Outer")
+        assert "OuterDep" in outer.type_refs
+        assert "InnerDep" not in outer.type_refs
 
 
 class TestParseFileModuleVals:

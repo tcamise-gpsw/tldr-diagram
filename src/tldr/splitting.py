@@ -137,6 +137,10 @@ def split_oversized_group(
 
         sub_ref = _generate_sub_group_ref(segment, group_ref)
         override = tree.group_overrides.get(sub_ref, {})
+        if override:
+            tree.matched_group_overrides.add(sub_ref)
+        if override.get("inline", False):
+            continue
         sub_name = override.get("name") or _generate_sub_group_name(segment, group.name)
         override_desc = override.get("description")
         sub_desc = override_desc if override_desc is not None else (

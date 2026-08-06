@@ -143,6 +143,30 @@ class TestSplitOversizedGroup:
         lonely = [e for e in tree.elements.values() if "lonely" in e.package_path]
         assert lonely[0].parent_ref == "core-settings"
 
+    def test_inline_override_keeps_bucket_elements_in_parent(self):
+        tree = _make_tree(max_size=3)
+        tree.group_overrides["core-settings--connection"] = {"inline": True}
+        _add_elements(tree, "core-settings", [
+            "core/domain/camera/setting/parser/A",
+            "core/domain/camera/setting/parser/B",
+            "core/domain/camera/setting/parser/C",
+            "core/domain/camera/setting/connection/Manager",
+            "core/domain/camera/setting/connection/Policy",
+        ])
+
+        result = split_oversized_group("core-settings", tree)
+
+        refs = {group.ref for group in result}
+        assert "core-settings--parser" in refs
+        assert "core-settings--connection" not in refs
+        connection_elements = [
+            element
+            for element in tree.elements.values()
+            if "connection" in element.package_path
+        ]
+        assert all(element.parent_ref == "core-settings" for element in connection_elements)
+        assert "core-settings--connection" in tree.matched_group_overrides
+
     def test_no_split_when_single_bucket(self):
         """If all elements share the same next segment, can't split."""
         tree = _make_tree(max_size=2)

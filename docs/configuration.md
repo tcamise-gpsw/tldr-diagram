@@ -51,6 +51,58 @@ groups:
 
 The `parent` field references a module key or another group key.
 
+### Auto-Group Overrides
+
+An entry without `parent` customizes the group that auto-splitting creates for
+the same generated ref:
+
+```yaml
+groups:
+  core--network--ble:
+    name: BLE
+    summary: Bluetooth transport.
+```
+
+Set `inline: true` when a package bucket should remain visible as individual
+elements in its generated parent instead of becoming another group:
+
+```yaml
+groups:
+  core--network--connection:
+    inline: true
+    summary: Connection orchestration.
+```
+
+The override is considered matched when auto-splitting encounters that package
+bucket, even though no group node is created.
+
+### Explicit Groups Under Generated Hierarchies
+
+A rule may target a configured parentless group directly. The generated ref
+encodes its parent using `parent--segment`; configured ancestors are materialized
+as needed. This supports curated grouping without replacing the surrounding
+auto-generated hierarchy:
+
+```yaml
+groups:
+  core--network:
+    name: Network
+    summary: Network implementation.
+  core--network--protocol:
+    name: Protocol
+    summary: Wire protocol implementation.
+
+rules:
+  - module: my-core
+    prefix: core/network/protocol
+    group: core--network--protocol
+  - module: my-core
+    prefix: core/network
+    group: core--network
+```
+
+More-specific rules must appear before less-specific rules.
+
 ## Rules
 
 Rules route elements to groups based on `(module, package_prefix)`. They are evaluated in order — first match wins.

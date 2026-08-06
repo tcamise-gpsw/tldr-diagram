@@ -138,6 +138,9 @@ class ArchTree:
     # Name/description/docs overrides for auto-generated groups, keyed by their
     # generated ref (e.g. "data--camera--ble"). Applied during auto-split.
     group_overrides: dict[str, dict] = field(default_factory=dict)
+    # Overrides encountered by auto-splitting, including inline groups that
+    # deliberately produce no GroupNode. Used to report genuinely stale config.
+    matched_group_overrides: set[str] = field(default_factory=set)
 
     # Configuration
     max_group_size: int = 20  # Auto-split threshold

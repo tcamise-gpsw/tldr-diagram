@@ -35,6 +35,7 @@ def test_group_without_parent_becomes_override(tmp_path):
           data--camera--ble:
             name: BLE
             docs: Bluetooth stack.
+            inline: true
         rules:
           - module: connect-sdk-core
             prefix: core/v2
@@ -46,6 +47,7 @@ def test_group_without_parent_becomes_override(tmp_path):
     assert tree.group_overrides["data--camera--ble"] == {
         "name": "BLE",
         "docs": "Bluetooth stack.",
+        "inline": True,
     }
 
 
@@ -110,3 +112,38 @@ def test_group_override_carries_summary(tmp_path):
     tree = load_config(cfg)
     assert tree.group_overrides["data--camera"]["summary"] == "Short."
     assert tree.group_overrides["data--camera"]["description"] == "Long description."
+
+
+def test_rule_materializes_configured_group_and_ancestors(tmp_path):
+    cfg = _write(tmp_path, """
+        modules:
+          data:
+            name: Data
+        groups:
+          data--camera:
+            name: Camera
+            summary: Camera implementation.
+          data--camera--commands:
+            name: Commands
+            summary: Camera wire commands.
+        rules:
+          - module: connect-sdk-core
+            prefix: core/v2/camera/commands
+            group: data--camera--commands
+          - module: connect-sdk-core
+            prefix: core/v2/camera
+            group: data--camera
+          - module: connect-sdk-core
+            prefix: core/v2
+            group: data
+    """)
+
+    tree = load_config(cfg)
+
+    assert tree.groups["data--camera"].parent_ref == "data"
+    assert tree.groups["data--camera"].summary == "Camera implementation."
+    assert tree.groups["data--camera--commands"].parent_ref == "data--camera"
+    assert tree.groups["data--camera--commands"].summary == "Camera wire commands."
+    assert "data--camera" not in tree.group_overrides
+    assert "data--camera--commands" not in tree.group_overrides
+    assert tree.rules[0].group == "data--camera--commands"

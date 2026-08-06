@@ -118,6 +118,16 @@ def _get_declaration_kind(node: tree_sitter.Node) -> str:
     return "class"
 
 
+def _is_private(node: tree_sitter.Node) -> bool:
+    """Return True if the class declaration has private visibility."""
+    for child in node.children:
+        if child.type == "modifiers":
+            for mod in child.children:
+                if mod.type == "visibility_modifier":
+                    return mod.text.decode("utf-8") == "private"
+    return False
+
+
 def _collect_user_types(node: tree_sitter.Node, types: set[str]) -> None:
     """Recursively collect all user_type simple names from a subtree.
 
@@ -141,6 +151,36 @@ def _collect_user_types(node: tree_sitter.Node, types: set[str]) -> None:
         else:
             _collect_user_types(child, types)
 
+
+
+def _collect_imported_refs(
+    node: tree_sitter.Node,
+    imports: dict[str, str],
+    types: set[str],
+) -> None:
+    """Collect identifier nodes whose text is in the file's import map.
+
+    Captures dependencies referenced in expression positions — constructor
+    calls, companion/object member access, sealed-class variants, enum
+    constants, etc. — that are invisible to _collect_user_types because they
+    are not type-annotation nodes.
+
+    The import map is the gate: only names the file explicitly imports are
+    collected, so local variables, method names, and stdlib references are
+    naturally excluded without any AST-position heuristics.
+
+    Skips nested class declarations so their body refs are not attributed
+    to the enclosing class.
+    """
+    for child in node.children:
+        if child.type == "class_declaration":
+            continue  # nested class — handled separately
+        if child.type == "identifier":
+            name = child.text.decode("utf-8")
+            if name in imports:
+                types.add(name)
+        else:
+            _collect_imported_refs(child, imports, types)
 
 def _find_child(node: tree_sitter.Node, type_name: str) -> tree_sitter.Node | None:
     """Return the first direct child of `node` with the given type."""
@@ -238,7 +278,7 @@ def parse_file(source: bytes, file_path: str) -> AnalyzedFile:
                 result.imports[simple_name] = qi
 
     # Pass 2: Extract class/interface declarations (top-level and nested)
-    _extract_elements(root, file_path, result)
+    _extract_elements(root, file_path, result, result.imports)
 
     # Pass 3: Extract Koin Module vals (DI composition manifests)
     _extract_module_vals(root, file_path, result)
@@ -250,6 +290,7 @@ def _extract_elements(
     node: tree_sitter.Node,
     file_path: str,
     result: AnalyzedFile,
+    imports: dict[str, str] | None = None,
 ) -> None:
     """Find top-level class/interface declarations and extract their type refs.
 
@@ -265,7 +306,7 @@ def _extract_elements(
         if child.type == "class_declaration":
             kind = _get_declaration_kind(child)
             name = _extract_identifier_text(child)
-            if kind in ("class", "interface") and name:
+            if kind in ("class", "interface") and name and not _is_private(child):
                 # Collect type references, separating supertypes from uses.
                 type_refs: set[str] = set()
                 supertypes: set[str] = set()
@@ -276,6 +317,8 @@ def _extract_elements(
                         _collect_user_types(sub, supertypes)
                     elif sub.type == "class_body":
                         _collect_user_types(sub, type_refs)
+                        if imports:
+                            _collect_imported_refs(sub, imports, type_refs)
                 type_refs.discard(name)
                 supertypes.discard(name)
                 type_refs -= supertypes

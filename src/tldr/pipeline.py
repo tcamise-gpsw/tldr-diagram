@@ -151,8 +151,13 @@ def run_pipeline(
                 child_count = sum(1 for e in tree.elements.values() if e.parent_ref == g.ref)
                 print(f"    {g.ref}: {g.name} ({child_count} classes)")
 
-    # Warn about group overrides that matched no generated group.
-    unused_overrides = [ref for ref in tree.group_overrides if ref not in tree.groups]
+    # Warn about overrides that no split bucket consumed. Inline overrides are
+    # consumed even though they intentionally produce no GroupNode.
+    unused_overrides = [
+        ref
+        for ref in tree.group_overrides
+        if ref not in tree.groups and ref not in tree.matched_group_overrides
+    ]
     if unused_overrides:
         print(f"\n  ⚠ {len(unused_overrides)} group override(s) matched no generated group:")
         for ref in sorted(unused_overrides):
