@@ -22,9 +22,7 @@ export const App: React.FC = () => {
     return ['root', ...segs.map((_, i) => segs.slice(0, i + 1).join('--'))];
   });
   const currentView = navigationStack[navigationStack.length - 1];
-  const [selectedNode, setSelectedNode] = useState<string | null>(
-    () => new URLSearchParams(window.location.search).get('selected'),
-  );
+  const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [hoveredGroupIcon, setHoveredGroupIcon] = useState<string | null>(null);
@@ -32,9 +30,7 @@ export const App: React.FC = () => {
   const [hoveredSourceIcon, setHoveredSourceIcon] = useState<string | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [showExternalStubs, setShowExternalStubs] = useState(true);
-  const [focusedNode, setFocusedNode] = useState<string | null>(
-    () => new URLSearchParams(window.location.search).get('focus'),
-  );
+  const [focusedNode, setFocusedNode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,13 +39,21 @@ export const App: React.FC = () => {
     action: () => void;
   } | null>(null);
 
-  // Load diagram data on mount
+  // Load diagram data on mount; resolve URL-param names → full refs after load
   useEffect(() => {
     loadDiagramData()
       .then(({ data: loadedData, sourceRoot: root }) => {
         setData(loadedData);
         setSourceRoot(root);
         setLoading(false);
+        // Resolve ?selected and ?focus from element names → full refs
+        const params = new URLSearchParams(window.location.search);
+        const selectedName = params.get('selected');
+        const focusName = params.get('focus');
+        const byName = (name: string) =>
+          [...loadedData.elements.values()].find((e) => e.name === name)?.ref ?? null;
+        if (selectedName) setSelectedNode(byName(selectedName));
+        if (focusName) setFocusedNode(byName(focusName));
       })
       .catch((err) => {
         setError(err.message);
@@ -58,14 +62,21 @@ export const App: React.FC = () => {
   }, []);
 
   // Sync navigation state → URL (replaceState keeps history entries clean)
+  // Sync navigation state → URL using short display names, not full refs
   useEffect(() => {
     const params = new URLSearchParams();
     if (currentView !== 'root') params.set('view', currentView);
-    if (selectedNode) params.set('selected', selectedNode);
-    if (focusedNode) params.set('focus', focusedNode);
+    if (selectedNode && data) {
+      const name = data.elements.get(selectedNode)?.name;
+      if (name) params.set('selected', name);
+    }
+    if (focusedNode && data) {
+      const name = data.elements.get(focusedNode)?.name;
+      if (name) params.set('focus', name);
+    }
     const qs = params.toString();
     window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
-  }, [currentView, selectedNode, focusedNode]);
+  }, [currentView, selectedNode, focusedNode, data]);
 
   const highlightedExternalEdges = useMemo(() => {
     if (!data || !selectedNode) return new Set<string>();
