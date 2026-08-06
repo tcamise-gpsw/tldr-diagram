@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeComponentNeighborhood } from './neighborhood';
+import { computeComponentFocus } from './focus';
 import { Connector, DiagramData, Element, ViewNode } from './types';
 
 function element(ref: string, name: string, hasView = false): Element {
@@ -31,7 +31,7 @@ function data(elements: Element[], connectors: Connector[]): DiagramData {
   };
 }
 
-describe('computeComponentNeighborhood', () => {
+describe('computeComponentFocus', () => {
   it('returns direct neighbors plus every class-level edge between the displayed components', () => {
     const diagram = data(
       [
@@ -52,19 +52,19 @@ describe('computeComponentNeighborhood', () => {
       ],
     );
 
-    const neighborhood = computeComponentNeighborhood(diagram, 'manager');
+    const focus = computeComponentFocus(diagram, 'manager');
 
-    expect(neighborhood.elements.map((item) => item.ref).sort()).toEqual([
+    expect(focus.elements.map((item) => item.ref).sort()).toEqual([
       'ble',
       'controller',
       'facade',
       'manager',
     ]);
-    expect(neighborhood.connectors.map((item) => item.id).sort()).toEqual(['c1', 'c2', 'c3', 'c4']);
+    expect(focus.connectors.map((item) => item.id).sort()).toEqual(['c1', 'c2', 'c3', 'c4']);
   });
 
-  it('returns an empty neighborhood for groups', () => {
+  it('returns empty for groups', () => {
     const diagram = data([element('ports', 'Ports', true)], []);
-    expect(computeComponentNeighborhood(diagram, 'ports')).toEqual({ elements: [], connectors: [] });
+    expect(computeComponentFocus(diagram, 'ports')).toEqual({ elements: [], connectors: [] });
   });
 });

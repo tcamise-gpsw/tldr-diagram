@@ -8,8 +8,8 @@ interface SidePanelProps {
   data: DiagramData;
   onNavigateToElement?: (ref: string) => void;
   focusedNode?: string | null;
-  onShowNeighborhood?: (ref: string) => void;
-  onExitNeighborhood?: () => void;
+  onShowFocus?: (ref: string) => void;
+  onExitFocus?: () => void;
   collapsed: boolean;
   onSetCollapsed: (collapsed: boolean) => void;
 }
@@ -20,8 +20,8 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   data,
   onNavigateToElement,
   focusedNode = null,
-  onShowNeighborhood,
-  onExitNeighborhood,
+  onShowFocus,
+  onExitFocus,
   collapsed,
   onSetCollapsed,
 }) => {
@@ -111,13 +111,13 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         <p className="panel-description">{element.description || element.summary}</p>
         {element.technology && <p className="panel-tech">Tech: {element.technology}</p>}
       </div>
-      {onShowNeighborhood && !element.has_view && (
+      {onShowFocus && !element.has_view && (
         <div className="panel-section">
           <button
-            className={`panel-button panel-button--neighborhood${focusedNode === selectedNode ? ' panel-button--active' : ' panel-button--dimmed'}`}
-            onClick={focusedNode === selectedNode ? onExitNeighborhood : () => onShowNeighborhood(selectedNode)}
+            className={`panel-button panel-button--focus${focusedNode === selectedNode ? ' panel-button--active' : ' panel-button--dimmed'}`}
+            onClick={focusedNode === selectedNode ? onExitFocus : () => onShowFocus(selectedNode)}
           >
-            {focusedNode === selectedNode ? 'Exit Neighborhood' : 'Show Neighborhood'}
+            {focusedNode === selectedNode ? 'Exit Focus' : 'Show Focus'}
           </button>
         </div>
       )}

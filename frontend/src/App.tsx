@@ -3,7 +3,7 @@ import logoUrl from './assets/logo.png';
 import { loadDiagramData, getViewElements, getViewConnectors, getDescendantRefs } from './data/loader';
 import { DiagramData } from './data/types';
 import { computeExternalStubs } from './canvas/stubs';
-import { computeComponentNeighborhood } from './data/neighborhood';
+import { computeComponentFocus } from './data/focus';
 import { getOrComputeLayout, invalidateLayout } from './canvas/layout';
 import { CanvasViewport } from './canvas/CanvasViewport';
 import { Toolbar } from './components/Toolbar';
@@ -69,14 +69,14 @@ export const App: React.FC = () => {
   }, []);
 
 
-  const handleShowNeighborhood = useCallback((ref: string) => {
+  const handleShowFocus = useCallback((ref: string) => {
     setFocusedNode(ref);
     setSelectedNode(ref);
-    invalidateLayout(`neighborhood:${ref}`);
-    window.history.pushState({ neighborhood: ref }, '');
+    invalidateLayout(`focus:${ref}`);
+    window.history.pushState({ focus: ref }, '');
   }, []);
 
-  const handleExitNeighborhood = useCallback(() => {
+  const handleExitFocus = useCallback(() => {
     setFocusedNode(null);
   }, []);
 
@@ -149,7 +149,7 @@ export const App: React.FC = () => {
   const handleGoUp = useCallback(() => {
     if (!data) return;
     if (focusedNode) {
-      handleExitNeighborhood();
+      handleExitFocus();
       return;
     }
     if (navigationStack.length <= 1) {
@@ -157,7 +157,7 @@ export const App: React.FC = () => {
       return;
     }
     handleGoToLevel(navigationStack.length - 2);
-  }, [data, focusedNode, handleExitNeighborhood, navigationStack, handleGoToLevel]);
+  }, [data, focusedNode, handleExitFocus, navigationStack, handleGoToLevel]);
 
   const handleNavigateToElement = useCallback((targetRef: string) => {
     if (!data) return;
@@ -224,15 +224,15 @@ export const App: React.FC = () => {
     return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>Error: {error}</div>;
   }
 
-  const neighborhood = focusedNode
-    ? computeComponentNeighborhood(data, focusedNode)
+  const focus = focusedNode
+    ? computeComponentFocus(data, focusedNode)
     : null;
-  const viewElements = neighborhood?.elements ?? getViewElements(data, currentView);
-  const viewConnectors = neighborhood?.connectors ?? getViewConnectors(data, currentView);
-  const layoutKey = focusedNode ? `neighborhood:${focusedNode}` : currentView;
+  const viewElements = focus?.elements ?? getViewElements(data, currentView);
+  const viewConnectors = focus?.connectors ?? getViewConnectors(data, currentView);
+  const layoutKey = focusedNode ? `focus:${focusedNode}` : currentView;
   const layout = getOrComputeLayout(layoutKey, viewElements, viewConnectors, 'BT');
 
-  // Neighborhoods already contain every direct edge. Hierarchical views use
+  // Focus views already contain every direct edge. Hierarchical views use
   // expandable stubs for connections beyond their current boundary.
   const externalStubs = focusedNode
     ? []
@@ -255,7 +255,7 @@ export const App: React.FC = () => {
                 <span
                   className={`breadcrumb-item ${isLast ? 'active' : ''}`}
                   onClick={() => isLast
-                    ? (focusedNode ? handleExitNeighborhood() : handleSelect(currentView))
+                    ? (focusedNode ? handleExitFocus() : handleSelect(currentView))
                     : handleGoToLevel(idx)}
                   style={{ cursor: 'pointer', fontWeight: isLast ? 'bold' : 'normal' }}
                 >
@@ -267,8 +267,8 @@ export const App: React.FC = () => {
           {focusedNode && (
             <>
               <span className="breadcrumb-separator">/</span>
-              <span className="breadcrumb-item active">
-                Neighborhood: {data.elements.get(focusedNode)?.name ?? focusedNode}
+              <span className="breadcrumb-item active breadcrumb-item--focus">
+                Focus: {data.elements.get(focusedNode)?.name ?? focusedNode}
               </span>
             </>
           )}
@@ -324,8 +324,8 @@ export const App: React.FC = () => {
           data={data}
           onNavigateToElement={handleNavigateToElement}
           focusedNode={focusedNode}
-          onShowNeighborhood={handleShowNeighborhood}
-          onExitNeighborhood={handleExitNeighborhood}
+          onShowFocus={handleShowFocus}
+          onExitFocus={handleExitFocus}
           collapsed={panelCollapsed}
           onSetCollapsed={setPanelCollapsed}
         />

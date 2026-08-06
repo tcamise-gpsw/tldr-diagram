@@ -70,6 +70,12 @@ body {
   color: #58a6ff;
 }
 
+.breadcrumb-item--focus.active {
+  background-color: rgba(163, 113, 247, 0.15);
+  color: #a371f7;
+  cursor: default;
+}
+
 .breadcrumb-separator {
   display: inline-block;
   margin: 0 2px;
@@ -246,21 +252,21 @@ body {
   transition: background-color 0.2s, color 0.2s;
 }
 
-/* Neighborhood — purple */
-.panel-button--neighborhood {
+/* Focus — purple */
+.panel-button--focus {
   border-color: #a371f7;
   color: #a371f7;
 }
 
-.panel-button--neighborhood.panel-button--active {
+.panel-button--focus.panel-button--active {
   background-color: rgba(163, 113, 247, 0.2);
 }
 
-.panel-button--neighborhood.panel-button--active:hover {
+.panel-button--focus.panel-button--active:hover {
   background-color: rgba(163, 113, 247, 0.35);
 }
 
-.panel-button--neighborhood.panel-button--dimmed:hover {
+.panel-button--focus.panel-button--dimmed:hover {
   background-color: rgba(163, 113, 247, 0.08);
 }
 

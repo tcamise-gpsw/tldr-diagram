@@ -1,15 +1,15 @@
 import { Connector, DiagramData, Element } from './types';
 
-export interface ComponentNeighborhood {
+export interface ComponentFocus {
   elements: Element[];
   connectors: Connector[];
 }
 
-/** Build a cross-hierarchy view containing one component and every direct class-level neighbor. */
-export function computeComponentNeighborhood(
+/** Build a cross-hierarchy focus view containing one component and every direct class-level neighbor. */
+export function computeComponentFocus(
   data: DiagramData,
   centerRef: string,
-): ComponentNeighborhood {
+): ComponentFocus {
   const center = data.elements.get(centerRef);
   if (!center || center.has_view) return { elements: [], connectors: [] };
 
