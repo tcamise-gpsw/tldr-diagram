@@ -296,7 +296,8 @@ body {
 
 /* Source link — muted blue, styled as button */
 .panel-button--source {
-  display: inline-block;
+  display: block;
+  text-align: center;
   text-decoration: none;
   border-color: #388bfd;
   color: #388bfd;

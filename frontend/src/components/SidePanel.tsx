@@ -119,6 +119,13 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             className="panel-button panel-button--source"
             href={`idea://open?file=${sourceRoot}/${element.file_path}&line=1`}
           >
+            <svg viewBox="0 0 24 24" width="13" height="13" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 5, marginBottom: 1 }}>
+              <line x1="8.5" y1="6.5" x2="6.2" y2="3.2" stroke="#3ddc84" strokeWidth="1.6" strokeLinecap="round"/>
+              <line x1="15.5" y1="6.5" x2="17.8" y2="3.2" stroke="#3ddc84" strokeWidth="1.6" strokeLinecap="round"/>
+              <rect x="3.5" y="7" width="17" height="12" rx="4" fill="#3ddc84"/>
+              <circle cx="9" cy="12" r="1.5" fill="white"/>
+              <circle cx="15" cy="12" r="1.5" fill="white"/>
+            </svg>
             Go to Source
           </a>
         </div>
