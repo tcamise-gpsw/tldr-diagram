@@ -30,7 +30,7 @@ const layoutCache = new Map<string, ViewLayout>();
 export function computeLayout(
   elements: Element[],
   connectors: Connector[],
-  rankdir: 'BT' | 'LR' = 'BT',
+  rankdir: 'BT' | 'LR' | 'TB' = 'BT',
 ): ViewLayout {
   if (elements.length === 0) {
     return { nodes: [], edges: [], width: 0, height: 0 };
@@ -120,7 +120,7 @@ export function getOrComputeLayout(
   viewRef: string,
   elements: Element[],
   connectors: Connector[],
-  rankdir: 'BT' | 'LR' = 'BT',
+  rankdir: 'BT' | 'LR' | 'TB' = 'BT',
 ): ViewLayout {
   if (layoutCache.has(viewRef)) {
     return layoutCache.get(viewRef)!;
