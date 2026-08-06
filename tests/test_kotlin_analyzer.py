@@ -7,6 +7,7 @@ from tldr.kotlin_analyzer import (
     analyze_sources,
     _should_exclude,
     _collect_user_types,
+    _split_kdoc,
     _PARSER,
     AnalyzedFile,
 )
@@ -342,3 +343,57 @@ class TestModuleValConnectors:
             c["source"] == sdk_key and c["target"] == dm_key
             for c in result.raw_connectors
         )
+
+
+class TestSplitKdoc:
+    """Tests for KDoc summary/description extraction."""
+
+    def test_summary_is_first_sentence_description_is_full_prose(self):
+        raw = "/**\n * First sentence. Second sentence.\n */"
+        summary, desc = _split_kdoc(raw)
+        assert summary == "First sentence."
+        assert desc == "First sentence. Second sentence."
+
+    def test_block_tags_are_dropped(self):
+        raw = "/**\n * Connects to a camera.\n *\n * @param device the camera\n * @return a handle\n */"
+        summary, desc = _split_kdoc(raw)
+        assert summary == "Connects to a camera."
+        assert desc == "Connects to a camera."
+
+    def test_oneliner(self):
+        assert _split_kdoc("/** Owns the Koin application. */") == (
+            "Owns the Koin application.",
+            "Owns the Koin application.",
+        )
+
+    def test_non_kdoc_block_comment_ignored(self):
+        assert _split_kdoc("/* plain comment */") == ("", "")
+
+
+class TestParseFileKdoc:
+    """KDoc attaches to the immediately following declaration only."""
+
+    def test_kdoc_attached_to_class(self):
+        result = parse_file(b"/**\n * A widget repository.\n */\nclass WidgetRepo", "W.kt")
+        e = next(e for e in result.elements if e.name == "WidgetRepo")
+        assert e.summary == "A widget repository."
+        assert e.doc == "A widget repository."
+
+    def test_kdoc_attached_to_module_val(self):
+        result = parse_file(b"/** The data DI module. */\nval dataModule: Module = module { }", "D.kt")
+        e = next(e for e in result.elements if e.name == "dataModule")
+        assert e.kind == "di_module"
+        assert e.summary == "The data DI module."
+
+    def test_line_comment_is_not_kdoc(self):
+        result = parse_file(b"// not a doc\nclass Foo", "F.kt")
+        e = next(e for e in result.elements if e.name == "Foo")
+        assert e.summary == ""
+        assert e.doc == ""
+
+    def test_kdoc_not_leaked_to_next_declaration(self):
+        result = parse_file(b"/** Doc for A. */\nclass A\nclass B", "AB.kt")
+        a = next(e for e in result.elements if e.name == "A")
+        b = next(e for e in result.elements if e.name == "B")
+        assert a.summary == "Doc for A."
+        assert b.summary == ""

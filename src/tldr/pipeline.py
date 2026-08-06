@@ -278,6 +278,7 @@ def serialize_tree(result: PipelineResult) -> tuple[dict, list[dict]]:
         elements[ref] = {
             "name": mod.name,
             "kind": "component",
+            "summary": mod.summary,
             "description": mod.description,
             "technology": "kotlin",
             "has_view": True,
@@ -296,6 +297,7 @@ def serialize_tree(result: PipelineResult) -> tuple[dict, list[dict]]:
         entry = {
             "name": group.name,
             "kind": "component",
+            "summary": group.summary,
             "description": group.description,
             "technology": "kotlin",
             "has_view": has_children,
@@ -305,14 +307,15 @@ def serialize_tree(result: PipelineResult) -> tuple[dict, list[dict]]:
             entry["docs"] = group.docs
         elements[ref] = entry
 
-    # Elements (classes)
+    # Elements (classes) — summary/description come from KDoc; fall back to package path.
     for key, elem in tree.elements.items():
-        # Build description from package path (e.g., "core.domain.camera.setting.parser")
-        description = elem.package_path.replace("/", ".") if elem.package_path else ""
+        package_desc = elem.package_path.replace("/", ".") if elem.package_path else ""
+        description = elem.description or package_desc
 
         entry: dict = {
             "name": elem.name,
             "kind": elem.kind,
+            "summary": elem.summary,
             "description": description,
             "technology": elem.technology,
             "language": "kotlin",

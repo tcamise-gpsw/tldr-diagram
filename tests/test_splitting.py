@@ -251,3 +251,13 @@ class TestModuleAsSplittableContainer:
         assert cam.docs == "long form"
         # A sibling with no override keeps the generated name.
         assert tree.groups["data--helmet"].name == "Helmet"
+
+    def test_override_summary_derived_from_description(self):
+        tree = _module_tree(max_size=1)
+        tree.group_overrides["data--camera"] = {"description": "Camera stuff. Extra."}
+        _add_elements(tree, "data", [
+            "core/v2/camera/A", "core/v2/camera/B",
+            "core/v2/helmet/C", "core/v2/helmet/D",
+        ])
+        split_all_oversized(tree)
+        assert tree.groups["data--camera"].summary == "Camera stuff."

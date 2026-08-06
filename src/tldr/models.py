@@ -10,6 +10,16 @@ recursive sub-grouping without a fixed depth limit.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import re
+
+
+def first_sentence(text: str) -> str:
+    """First sentence of `text` (through the first . ! or ?), whitespace-collapsed."""
+    collapsed = " ".join(text.split())
+    if not collapsed:
+        return ""
+    match = re.search(r"(?<=[.!?])\s", collapsed)
+    return collapsed[: match.start()] if match else collapsed
 
 
 # ---------------------------------------------------------------------------
@@ -43,6 +53,8 @@ class Module:
     ref: str
     name: str
     description: str = ""
+    summary: str = ""  # short one-liner shown on the node
+    docs: str = ""
 
     @property
     def parent_ref(self) -> str:
@@ -60,6 +72,7 @@ class GroupNode:
     ref: str
     name: str
     description: str = ""
+    summary: str = ""  # short one-liner shown on the node
     docs: str = ""  # optional long-form documentation (override-configurable)
     parent_ref: str = ""  # ref of parent Module or GroupNode
     is_auto_generated: bool = False  # True if created by auto-split
@@ -80,6 +93,8 @@ class Element:
     name: str
     kind: str = "class"
     technology: str = "kotlin"
+    summary: str = ""  # short one-liner shown on the node (e.g. KDoc first sentence)
+    description: str = ""  # full text shown in the sidebar (e.g. full KDoc prose)
     file_path: str = ""
     package_path: str = ""  # Extracted relative package path
     module: str = ""  # SDK module name (e.g., "connect-sdk-core")

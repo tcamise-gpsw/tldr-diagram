@@ -102,7 +102,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
       </div>
 
       <div className="panel-section">
-        <p className="panel-description">{element.description}</p>
+        <p className="panel-description">{element.description || element.summary}</p>
         {element.technology && <p className="panel-tech">Tech: {element.technology}</p>}
       </div>
 

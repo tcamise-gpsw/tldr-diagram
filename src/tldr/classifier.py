@@ -113,6 +113,8 @@ def classify_raw_elements(
             module=module,
             parent_ref=group_ref,
             tags=elem.get("tags", []),
+            summary=elem.get("summary", ""),
+            description=elem.get("description", ""),
         )
         elements.append(element)
 

@@ -10,7 +10,7 @@ from pathlib import Path
 
 import yaml
 
-from .models import ArchTree, GroupNode, Module, Rule
+from .models import ArchTree, GroupNode, Module, Rule, first_sentence
 
 
 def load_config(config_path: Path) -> ArchTree:
@@ -38,10 +38,12 @@ def load_config(config_path: Path) -> ArchTree:
 
     # Modules
     for ref, mod in raw_modules.items():
+        description = mod.get("description", "")
         tree.modules[ref] = Module(
             ref=ref,
             name=mod["name"],
-            description=mod.get("description", ""),
+            description=description,
+            summary=mod.get("summary") or first_sentence(description),
         )
 
     # Groups. An entry WITH a `parent` is a structural group (rules may target it).
@@ -55,7 +57,9 @@ def load_config(config_path: Path) -> ArchTree:
         parent = group.get("parent")
         if parent is None:
             tree.group_overrides[ref] = {
-                k: group[k] for k in ("name", "description", "docs") if k in group
+                k: group[k]
+                for k in ("name", "summary", "description", "docs")
+                if k in group
             }
             continue
 
@@ -67,10 +71,12 @@ def load_config(config_path: Path) -> ArchTree:
             )
             sys.exit(1)
 
+        group_desc = group.get("description", "")
         tree.groups[ref] = GroupNode(
             ref=ref,
             name=group["name"],
-            description=group.get("description", ""),
+            description=group_desc,
+            summary=group.get("summary") or first_sentence(group_desc),
             docs=group.get("docs", ""),
             parent_ref=parent,
         )

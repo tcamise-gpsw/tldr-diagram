@@ -67,3 +67,46 @@ def test_structural_group_with_parent_still_works(tmp_path):
     assert "data-core" in tree.groups
     assert tree.groups["data-core"].parent_ref == "data"
     assert "data-core" not in tree.group_overrides
+
+
+def test_module_summary_derived_from_description(tmp_path):
+    cfg = _write(tmp_path, """
+        modules:
+          data:
+            name: Data
+            description: Full description here. More detail.
+    """)
+    tree = load_config(cfg)
+    assert tree.modules["data"].summary == "Full description here."
+    assert tree.modules["data"].description == "Full description here. More detail."
+
+
+def test_module_explicit_summary_wins(tmp_path):
+    cfg = _write(tmp_path, """
+        modules:
+          data:
+            name: Data
+            summary: Short one.
+            description: Full description here. More detail.
+    """)
+    tree = load_config(cfg)
+    assert tree.modules["data"].summary == "Short one."
+
+
+def test_group_override_carries_summary(tmp_path):
+    cfg = _write(tmp_path, """
+        modules:
+          data:
+            name: Data
+        groups:
+          data--camera:
+            summary: Short.
+            description: Long description.
+        rules:
+          - module: connect-sdk-core
+            prefix: core/v2
+            group: data
+    """)
+    tree = load_config(cfg)
+    assert tree.group_overrides["data--camera"]["summary"] == "Short."
+    assert tree.group_overrides["data--camera"]["description"] == "Long description."

@@ -21,6 +21,7 @@ export function parseDiagramData(elementsYaml: string, connectorsYaml: string): 
         name: elem.name,
         kind: elem.kind,
         description: elem.description,
+        summary: elem.summary ?? '',
         technology: elem.technology,
         has_view: elem.has_view ?? false,
         placements: elem.placements || [],

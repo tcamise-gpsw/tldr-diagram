@@ -2,6 +2,7 @@ export interface RawElement {
   name: string;
   kind: string;
   description: string;
+  summary?: string;
   technology: string;
   has_view?: boolean;
   placements?: { parent: string }[];
@@ -16,6 +17,7 @@ export interface Element {
   name: string;
   kind: string;
   description: string;
+  summary?: string;
   technology: string;
   has_view: boolean;
   placements: { parent: string }[];

@@ -235,7 +235,7 @@ function drawNodes(
       ctx.fillStyle = theme.NODE_TEXT_SECONDARY;
       ctx.font = theme.FONT_SECONDARY;
       const descY = node.y + 10;
-      ctx.fillText(truncateText(ctx, elem.description || '', maxTextWidth), node.x, descY);
+      ctx.fillText(truncateText(ctx, elem.summary || elem.description || '', maxTextWidth), node.x, descY);
     }
 
     // Draw expand icon for groups

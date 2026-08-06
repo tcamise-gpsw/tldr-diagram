@@ -11,6 +11,7 @@ files without attributing all imports to all classes.
 from __future__ import annotations
 
 import fnmatch
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -50,6 +51,8 @@ class AnalyzedElement:
     line: int
     type_refs: set[str] = field(default_factory=set)  # Simple type names referenced in body
     supertypes: set[str] = field(default_factory=set)  # Types from delegation_specifiers (extends/implements)
+    summary: str = ""  # KDoc first sentence (short, node label)
+    doc: str = ""       # full KDoc prose (sidebar description)
 
 
 @dataclass
@@ -67,6 +70,35 @@ def _extract_identifier_text(node: tree_sitter.Node) -> str | None:
         if child.type == "identifier":
             return child.text.decode("utf-8")
     return None
+
+
+def _split_kdoc(raw: str) -> tuple[str, str]:
+    """Extract (summary, description) from a `/** … */` KDoc block comment.
+
+    Description is the leading prose with block tags (@param, @return, …) and
+    everything after them removed. Summary is its first sentence. Returns
+    ("", "") for a non-KDoc block comment (plain `/* … */`).
+    """
+    body = raw.strip()
+    if not body.startswith("/**"):
+        return "", ""
+    body = body[3:]
+    if body.endswith("*/"):
+        body = body[:-2]
+    lines: list[str] = []
+    for line in body.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("*"):
+            stripped = stripped[1:].strip()
+        if stripped.startswith("@"):  # KDoc block tag — drop tags and everything after
+            break
+        lines.append(stripped)
+    description = " ".join(" ".join(lines).split())
+    if not description:
+        return "", ""
+    match = re.search(r"(?<=[.!?])\s", description)
+    summary = description[: match.start()] if match else description
+    return summary, description
 
 
 def _extract_qualified_identifier(node: tree_sitter.Node) -> str | None:
@@ -147,23 +179,28 @@ def _extract_module_vals(
     dependency from a composition root that wires them via `modules(...)`. Emitting
     them as elements lets those references become explicit cross-module edges.
     """
+    pending_summary = ""
+    pending_desc = ""
     for child in node.children:
-        if child.type != "property_declaration":
+        if child.type == "block_comment":
+            pending_summary, pending_desc = _split_kdoc(child.text.decode("utf-8"))
             continue
-        if not _is_koin_module_property(child):
-            continue
-        var_decl = _find_child(child, "variable_declaration")
-        name = _extract_identifier_text(var_decl) if var_decl is not None else None
-        if not name:
-            continue
-        result.elements.append(
-            AnalyzedElement(
-                name=name,
-                kind=_MODULE_VAL_KIND,
-                file_path=file_path,
-                line=child.start_point[0] + 1,
-            )
-        )
+        if child.type == "property_declaration" and _is_koin_module_property(child):
+            var_decl = _find_child(child, "variable_declaration")
+            name = _extract_identifier_text(var_decl) if var_decl is not None else None
+            if name:
+                result.elements.append(
+                    AnalyzedElement(
+                        name=name,
+                        kind=_MODULE_VAL_KIND,
+                        file_path=file_path,
+                        line=child.start_point[0] + 1,
+                        summary=pending_summary,
+                        doc=pending_desc,
+                    )
+                )
+        pending_summary = ""
+        pending_desc = ""
 
 
 def parse_file(source: bytes, file_path: str) -> AnalyzedFile:
@@ -219,43 +256,44 @@ def _extract_elements(
     Only extracts declarations at the current scope level — does NOT recurse
     into nested class bodies. Nested classes are excluded from the diagram.
     """
+    pending_summary = ""
+    pending_desc = ""
     for child in node.children:
+        if child.type == "block_comment":
+            pending_summary, pending_desc = _split_kdoc(child.text.decode("utf-8"))
+            continue
         if child.type == "class_declaration":
             kind = _get_declaration_kind(child)
-            if kind not in ("class", "interface"):
-                continue
-
             name = _extract_identifier_text(child)
-            if not name:
-                continue
+            if kind in ("class", "interface") and name:
+                # Collect type references, separating supertypes from uses.
+                type_refs: set[str] = set()
+                supertypes: set[str] = set()
+                for sub in child.children:
+                    if sub.type == "primary_constructor":
+                        _collect_user_types(sub, type_refs)
+                    elif sub.type == "delegation_specifiers":
+                        _collect_user_types(sub, supertypes)
+                    elif sub.type == "class_body":
+                        _collect_user_types(sub, type_refs)
+                type_refs.discard(name)
+                supertypes.discard(name)
+                type_refs -= supertypes
 
-            # Collect type references, separating supertypes from uses
-            type_refs: set[str] = set()
-            supertypes: set[str] = set()
-
-            for sub in child.children:
-                if sub.type == "primary_constructor":
-                    _collect_user_types(sub, type_refs)
-                elif sub.type == "delegation_specifiers":
-                    _collect_user_types(sub, supertypes)
-                elif sub.type == "class_body":
-                    _collect_user_types(sub, type_refs)
-
-            # Remove self-reference
-            type_refs.discard(name)
-            supertypes.discard(name)
-            # Remove supertypes from type_refs to avoid double-counting
-            type_refs -= supertypes
-
-            element = AnalyzedElement(
-                name=name,
-                kind=kind,
-                file_path=file_path,
-                line=child.start_point[0] + 1,
-                type_refs=type_refs,
-                supertypes=supertypes,
-            )
-            result.elements.append(element)
+                result.elements.append(
+                    AnalyzedElement(
+                        name=name,
+                        kind=kind,
+                        file_path=file_path,
+                        line=child.start_point[0] + 1,
+                        type_refs=type_refs,
+                        supertypes=supertypes,
+                        summary=pending_summary,
+                        doc=pending_desc,
+                    )
+                )
+        pending_summary = ""
+        pending_desc = ""
 
 
 def _should_exclude(rel_path: str, exclude_patterns: list[str]) -> bool:
@@ -362,6 +400,8 @@ def analyze_sources(
                 "kind": elem.kind,
                 "file_path": elem.file_path,
                 "line": elem.line,
+                "summary": elem.summary,
+                "description": elem.doc,
                 "tags": [],
             }
 

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from .models import ArchTree, Element, GroupNode
+from .models import ArchTree, Element, GroupNode, first_sentence
 
 
 def _compute_relative_path(element: Element, group: GroupNode, tree: ArchTree) -> str:
@@ -138,15 +138,19 @@ def split_oversized_group(
         sub_ref = _generate_sub_group_ref(segment, group_ref)
         override = tree.group_overrides.get(sub_ref, {})
         sub_name = override.get("name") or _generate_sub_group_name(segment, group.name)
-        sub_desc = override.get(
-            "description",
-            f"Auto-grouped from {group.name} by package segment '{segment}'.",
+        override_desc = override.get("description")
+        sub_desc = override_desc if override_desc is not None else (
+            f"Auto-grouped from {group.name} by package segment '{segment}'."
+        )
+        sub_summary = override.get("summary") or (
+            first_sentence(override_desc) if override_desc else ""
         )
 
         sub_group = GroupNode(
             ref=sub_ref,
             name=sub_name,
             description=sub_desc,
+            summary=sub_summary,
             docs=override.get("docs", ""),
             parent_ref=group_ref,
             is_auto_generated=True,
