@@ -117,6 +117,7 @@ export const App: React.FC = () => {
       const targetViewRef = navigationStack[index];
       
       const action = () => {
+        setFocusedNode(null);
         setNavigationStack((prev) => prev.slice(0, index + 1));
         setSelectedNode(null);
         invalidateLayout(targetViewRef);
@@ -253,7 +254,9 @@ export const App: React.FC = () => {
                 {idx > 0 && <span className="breadcrumb-separator">/</span>}
                 <span
                   className={`breadcrumb-item ${isLast ? 'active' : ''}`}
-                  onClick={() => isLast ? handleSelect(currentView) : handleGoToLevel(idx)}
+                  onClick={() => isLast
+                    ? (focusedNode ? handleExitNeighborhood() : handleSelect(currentView))
+                    : handleGoToLevel(idx)}
                   style={{ cursor: 'pointer', fontWeight: isLast ? 'bold' : 'normal' }}
                 >
                   {item}
