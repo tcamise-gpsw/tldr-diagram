@@ -22,6 +22,7 @@ export const App: React.FC = () => {
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [hoveredGroupIcon, setHoveredGroupIcon] = useState<string | null>(null);
   const [hoveredFocusIcon, setHoveredFocusIcon] = useState<string | null>(null);
+  const [hoveredSourceIcon, setHoveredSourceIcon] = useState<string | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [showExternalStubs, setShowExternalStubs] = useState(true);
   const [focusedNode, setFocusedNode] = useState<string | null>(null);
@@ -82,6 +83,13 @@ export const App: React.FC = () => {
   const handleExitFocus = useCallback(() => {
     setFocusedNode(null);
   }, []);
+
+  const handleOpenSource = useCallback((ref: string) => {
+    if (!data || !sourceRoot) return;
+    const elem = data.elements.get(ref);
+    if (!elem?.file_path) return;
+    window.open(`idea://open?file=${sourceRoot}/${elem.file_path}&line=1`, '_self');
+  }, [data, sourceRoot]);
 
   const handleEnterGroup = useCallback(
     (ref: string) => {
@@ -293,6 +301,7 @@ export const App: React.FC = () => {
             hoveredNode,
             hoveredGroupIcon,
             hoveredFocusIcon,
+            hoveredSourceIcon,
             selectedNode,
             focusedNode,
             showExternalStubs,
@@ -306,6 +315,8 @@ export const App: React.FC = () => {
           onHover={handleHover}
           onHoverGroupIcon={setHoveredGroupIcon}
           onHoverFocusIcon={setHoveredFocusIcon}
+          onOpenSource={sourceRoot ? handleOpenSource : undefined}
+          onHoverSourceIcon={setHoveredSourceIcon}
           transitionState={pendingNavigation?.transitionState}
           onTransitionComplete={() => {
             if (pendingNavigation?.action) {

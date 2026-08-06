@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { CameraState, screenToWorld, pan, zoomAtPoint, INITIAL_CAMERA, fitToContent } from './camera';
-import { hitTestNodes, isDrag, hitTestGroupIcon, hitTestFocusIcon } from './hitTest';
+import { hitTestNodes, isDrag, hitTestGroupIcon, hitTestFocusIcon, hitTestSourceIcon } from './hitTest';
 import { renderFrame, RenderState, ExternalStub } from './renderer';
 import { ViewLayout } from './layout';
 import { TransitionState, updateTransition } from './animation';
@@ -15,6 +15,8 @@ interface CanvasViewportProps {
   onEnterGroup: (ref: string) => void;
   onShowFocus?: (ref: string) => void;
   onHoverFocusIcon?: (ref: string | null) => void;
+  onOpenSource?: (ref: string) => void;
+  onHoverSourceIcon?: (ref: string | null) => void;
   onHover: (ref: string | null, x: number, y: number) => void;
   onHoverGroupIcon: (ref: string | null) => void;
   onFitToContent?: () => void;
@@ -31,6 +33,8 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
   onEnterGroup,
   onShowFocus,
   onHoverFocusIcon,
+  onOpenSource,
+  onHoverSourceIcon,
   onHover,
   onHoverGroupIcon,
   onFitToContent: onFitToContentProp,
@@ -174,17 +178,19 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
     const worldPoint = screenToWorld(screenX, screenY, cameraRef.current);
     const iconHitRef = hitTestGroupIcon(worldPoint.x, worldPoint.y, layout.nodes);
     const focusIconHitRef = hitTestFocusIcon(worldPoint.x, worldPoint.y, layout.nodes);
+    const sourceIconHitRef = hitTestSourceIcon(worldPoint.x, worldPoint.y, layout.nodes, elements);
     const hitRef = hitTestNodes(worldPoint.x, worldPoint.y, layout.nodes);
 
     onHoverGroupIcon(iconHitRef);
     onHoverFocusIcon?.(focusIconHitRef);
+    onHoverSourceIcon?.(sourceIconHitRef);
     onHover(hitRef, e.clientX, e.clientY);
 
     const canvas = canvasRef.current;
     if (canvas) {
-      canvas.style.cursor = iconHitRef || focusIconHitRef ? 'pointer' : '';
+      canvas.style.cursor = iconHitRef || focusIconHitRef || sourceIconHitRef ? 'pointer' : '';
     }
-  }, [layout.nodes, onHover, onHoverGroupIcon, onHoverFocusIcon]);
+  }, [layout.nodes, elements, onHover, onHoverGroupIcon, onHoverFocusIcon, onHoverSourceIcon]);
 
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
     if (currentTransitionRef.current?.active) return;
@@ -207,12 +213,17 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
         if (focusIconHitRef && onShowFocus) {
           onShowFocus(focusIconHitRef);
         } else {
-          const hitRef = hitTestNodes(worldPoint.x, worldPoint.y, layout.nodes);
-          onSelect(hitRef);
+          const sourceIconHitRef = hitTestSourceIcon(worldPoint.x, worldPoint.y, layout.nodes, elements);
+          if (sourceIconHitRef && onOpenSource) {
+            onOpenSource(sourceIconHitRef);
+          } else {
+            const hitRef = hitTestNodes(worldPoint.x, worldPoint.y, layout.nodes);
+            onSelect(hitRef);
+          }
         }
       }
     }
-  }, [layout.nodes, onSelect, onEnterGroup, onShowFocus]);
+  }, [layout.nodes, elements, onSelect, onEnterGroup, onShowFocus, onOpenSource]);
 
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
     if (currentTransitionRef.current?.active) return;

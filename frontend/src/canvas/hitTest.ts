@@ -1,4 +1,5 @@
 import { LayoutNode } from './layout';
+import { Element } from '../data/types';
 import { ExternalStub, getExternalStubGeometry } from './stubs';
 
 export const PAN_THRESHOLD = 5;
@@ -32,10 +33,9 @@ export function hitTestGroupIcon(worldX: number, worldY: number, nodes: LayoutNo
     const node = nodes[i];
     if (!node.isGroup) continue;
     
-    // Icon is drawn at (node.x + width/2 - 16, node.y - height/2 + 16)
-    // Hit radius of 16px
-    const iconX = node.x + node.width / 2 - 16;
-    const iconY = node.y - node.height / 2 + 16;
+    // Icon is drawn at (node.x + width/2 - 12, node.y - height/2 + 12)
+    const iconX = node.x + node.width / 2 - 12;
+    const iconY = node.y - node.height / 2 + 12;
     
     const dx = worldX - iconX;
     const dy = worldY - iconY;
@@ -50,14 +50,30 @@ export function hitTestFocusIcon(worldX: number, worldY: number, nodes: LayoutNo
   for (let i = nodes.length - 1; i >= 0; i--) {
     const node = nodes[i];
     if (node.isGroup) continue;
-    // Same position as group icon: top-right corner
-    const iconX = node.x + node.width / 2 - 16;
-    const iconY = node.y - node.height / 2 + 16;
+    // Top-right corner
+    const iconX = node.x + node.width / 2 - 12;
+    const iconY = node.y - node.height / 2 + 12;
     const dx = worldX - iconX;
     const dy = worldY - iconY;
     if (dx * dx + dy * dy <= 256) { // 16px radius
       return node.ref;
     }
+  }
+  return null;
+}
+
+export function hitTestSourceIcon(worldX: number, worldY: number, nodes: LayoutNode[], elements: Map<string, Element>): string | null {
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const node = nodes[i];
+    if (node.isGroup) continue;
+    const elem = elements.get(node.ref);
+    if (!elem?.file_path) continue;
+    // Bottom-right corner
+    const iconX = node.x + node.width / 2 - 12;
+    const iconY = node.y + node.height / 2 - 12;
+    const dx = worldX - iconX;
+    const dy = worldY - iconY;
+    if (dx * dx + dy * dy <= 256) return node.ref;
   }
   return null;
 }
