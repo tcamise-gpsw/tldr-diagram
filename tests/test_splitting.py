@@ -199,3 +199,55 @@ class TestSplitAllOversized:
         ])
         result = split_all_oversized(tree)
         assert result == []
+
+
+def _module_tree(max_size: int = 5) -> ArchTree:
+    """Tree whose rule targets a MODULE directly (no structural group)."""
+    tree = ArchTree(max_group_size=max_size)
+    tree.modules["data"] = Module(ref="data", name="Data")
+    tree.rules = [Rule(module="connect-sdk-core", prefix="core/v2", group="data")]
+    return tree
+
+
+class TestModuleAsSplittableContainer:
+    def test_split_oversized_module(self):
+        tree = _module_tree(max_size=3)
+        _add_elements(tree, "data", [
+            "core/v2/camera/ble/A",
+            "core/v2/camera/ble/B",
+            "core/v2/camera/wifi/C",
+            "core/v2/camera/wifi/D",
+            "core/v2/helmet/E",
+            "core/v2/helmet/F",
+        ])
+        result = split_all_oversized(tree)
+        refs = {g.ref for g in result}
+        # Segments hang directly off the module — no intermediate root group.
+        assert "data--camera" in refs
+        assert "data--helmet" in refs
+        # ...and split recursively.
+        assert "data--camera--ble" in refs
+        assert "data--camera--wifi" in refs
+        # Elements are re-parented under the module's segment groups.
+        assert tree.groups["data--helmet"].parent_ref == "data"
+
+    def test_override_applies_name_description_docs(self):
+        tree = _module_tree(max_size=1)
+        tree.group_overrides["data--camera"] = {
+            "name": "Camera Link",
+            "description": "camera transport",
+            "docs": "long form",
+        }
+        _add_elements(tree, "data", [
+            "core/v2/camera/A",
+            "core/v2/camera/B",
+            "core/v2/helmet/C",
+            "core/v2/helmet/D",
+        ])
+        split_all_oversized(tree)
+        cam = tree.groups["data--camera"]
+        assert cam.name == "Camera Link"
+        assert cam.description == "camera transport"
+        assert cam.docs == "long form"
+        # A sibling with no override keeps the generated name.
+        assert tree.groups["data--helmet"].name == "Helmet"

@@ -44,10 +44,21 @@ def load_config(config_path: Path) -> ArchTree:
             description=mod.get("description", ""),
         )
 
-    # Groups — parent can be a module or another group
-    valid_parents = set(tree.modules.keys()) | set(raw_groups.keys())
+    # Groups. An entry WITH a `parent` is a structural group (rules may target it).
+    # An entry WITHOUT a `parent` is an override for an auto-generated group of the
+    # same ref: it supplies name/description/docs when auto-split creates that group.
+    structural_group_refs = {
+        r for r, g in raw_groups.items() if g.get("parent") is not None
+    }
+    valid_parents = set(tree.modules.keys()) | structural_group_refs
     for ref, group in raw_groups.items():
-        parent = group["parent"]
+        parent = group.get("parent")
+        if parent is None:
+            tree.group_overrides[ref] = {
+                k: group[k] for k in ("name", "description", "docs") if k in group
+            }
+            continue
+
         if parent not in valid_parents:
             print(
                 f"ERROR: group '{ref}' references unknown parent '{parent}'. "
@@ -60,6 +71,7 @@ def load_config(config_path: Path) -> ArchTree:
             ref=ref,
             name=group["name"],
             description=group.get("description", ""),
+            docs=group.get("docs", ""),
             parent_ref=parent,
         )
 
@@ -77,15 +89,15 @@ def load_config(config_path: Path) -> ArchTree:
             visited.add(current)
             current = tree.groups[current].parent_ref
 
-    # Rules
-    group_refs = set(tree.groups.keys())
+    # Rules — a rule may target a module OR a structural group.
+    valid_targets = set(tree.groups.keys()) | set(tree.modules.keys())
     seen_rule_keys: dict[tuple[str, str], int] = {}
 
     for i, rule in enumerate(raw_rules):
-        if rule["group"] not in group_refs:
+        if rule["group"] not in valid_targets:
             print(
-                f"ERROR: rules[{i}] references unknown group '{rule['group']}'. "
-                f"Known groups: {sorted(group_refs)}",
+                f"ERROR: rules[{i}] references unknown target '{rule['group']}'. "
+                f"Known modules/groups: {sorted(valid_targets)}",
                 file=sys.stderr,
             )
             sys.exit(1)

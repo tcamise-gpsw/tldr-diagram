@@ -60,6 +60,7 @@ class GroupNode:
     ref: str
     name: str
     description: str = ""
+    docs: str = ""  # optional long-form documentation (override-configurable)
     parent_ref: str = ""  # ref of parent Module or GroupNode
     is_auto_generated: bool = False  # True if created by auto-split
 
@@ -119,6 +120,9 @@ class ArchTree:
     groups: dict[str, GroupNode] = field(default_factory=dict)
     elements: dict[str, Element] = field(default_factory=dict)
     rules: list[Rule] = field(default_factory=list)
+    # Name/description/docs overrides for auto-generated groups, keyed by their
+    # generated ref (e.g. "data--camera--ble"). Applied during auto-split.
+    group_overrides: dict[str, dict] = field(default_factory=dict)
 
     # Configuration
     max_group_size: int = 20  # Auto-split threshold

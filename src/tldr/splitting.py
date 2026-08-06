@@ -100,7 +100,9 @@ def split_oversized_group(
     Returns:
         List of newly created GroupNode instances (empty if no split needed).
     """
-    group = tree.groups[group_ref]
+    group = tree.groups.get(group_ref) or tree.modules.get(group_ref)
+    if group is None:
+        return []
 
     # Gather elements directly under this group
     child_elements = [
@@ -134,12 +136,18 @@ def split_oversized_group(
             continue  # Too small to justify its own sub-group
 
         sub_ref = _generate_sub_group_ref(segment, group_ref)
-        sub_name = _generate_sub_group_name(segment, group.name)
+        override = tree.group_overrides.get(sub_ref, {})
+        sub_name = override.get("name") or _generate_sub_group_name(segment, group.name)
+        sub_desc = override.get(
+            "description",
+            f"Auto-grouped from {group.name} by package segment '{segment}'.",
+        )
 
         sub_group = GroupNode(
             ref=sub_ref,
             name=sub_name,
-            description=f"Auto-grouped from {group.name} by package segment '{segment}'.",
+            description=sub_desc,
+            docs=override.get("docs", ""),
             parent_ref=group_ref,
             is_auto_generated=True,
         )
@@ -170,11 +178,13 @@ def split_all_oversized(tree: ArchTree) -> list[GroupNode]:
     for _ in range(max_iterations):
         # Find groups that exceed the limit (process deepest first)
         oversized = []
-        for ref, group in list(tree.groups.items()):
+        candidate_refs = list(tree.groups.keys()) + list(tree.modules.keys())
+        for ref in candidate_refs:
             child_count = sum(
                 1 for e in tree.elements.values() if e.parent_ref == ref
             )
-            group.element_count = child_count
+            if ref in tree.groups:
+                tree.groups[ref].element_count = child_count
             if child_count > tree.max_group_size:
                 oversized.append((tree.depth_of(ref), ref))
 

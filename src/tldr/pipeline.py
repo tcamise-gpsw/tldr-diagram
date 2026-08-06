@@ -151,6 +151,13 @@ def run_pipeline(
                 child_count = sum(1 for e in tree.elements.values() if e.parent_ref == g.ref)
                 print(f"    {g.ref}: {g.name} ({child_count} classes)")
 
+    # Warn about group overrides that matched no generated group.
+    unused_overrides = [ref for ref in tree.group_overrides if ref not in tree.groups]
+    if unused_overrides:
+        print(f"\n  ⚠ {len(unused_overrides)} group override(s) matched no generated group:")
+        for ref in sorted(unused_overrides):
+            print(f"      {ref}")
+
     # --- Process connectors ---
     retained_keys = set(tree.elements.keys())
     element_remap = build_element_remap(raw_elements, retained_keys)
@@ -286,7 +293,7 @@ def serialize_tree(result: PipelineResult) -> tuple[dict, list[dict]]:
             g.parent_ref == ref for g in tree.groups.values()
         )
 
-        elements[ref] = {
+        entry = {
             "name": group.name,
             "kind": "component",
             "description": group.description,
@@ -294,6 +301,9 @@ def serialize_tree(result: PipelineResult) -> tuple[dict, list[dict]]:
             "has_view": has_children,
             "placements": [{"parent": group.parent_ref}],
         }
+        if group.docs:
+            entry["docs"] = group.docs
+        elements[ref] = entry
 
     # Elements (classes)
     for key, elem in tree.elements.items():
