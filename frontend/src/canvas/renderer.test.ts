@@ -5,7 +5,7 @@
  *  1. Text culling below zoom threshold (Task 6 QA scenario)
  *  2. Resolved element name + description drawn (not node.ref)
  *  3. Connector arrowhead drawn per edge
- *  4. Hover / selected border-color styling
+ *  4. Hover / selected / focused border-color styling
  *  5. Frustum culling (viewport-based node skipping)
  *  6. External stubs drawing
  *  7. isNodeVisible pure-function unit tests
@@ -270,6 +270,26 @@ describe('renderer — hover and selected styling', () => {
     const state: RenderState = { ...emptyState(), selectedNode: 'a' };
     renderFrame(ctx as never, singleNodeLayout('a'), defaultCamera, state, elements, 1);
     expect(ctx._sets['strokeStyle']).toContain(theme.NODE_BORDER_SELECTED);
+  });
+
+  it('uses the focus color for every target in a multi-target focus view', () => {
+    const layout: ViewLayout = {
+      nodes: [
+        { ref: 'a', x: 100, y: 100, width: 220, height: 80, isGroup: false },
+        { ref: 'b', x: 400, y: 100, width: 220, height: 80, isGroup: false },
+      ],
+      edges: [],
+      width: 700,
+      height: 400,
+    };
+    const elems = new Map([['a', makeElement('a')], ['b', makeElement('b')]]);
+    const state = { ...emptyState(), focusedNodes: new Set(['a', 'b']) };
+
+    renderFrame(ctx as never, layout, defaultCamera, state, elems, 1);
+
+    const focusCount = (ctx._sets['strokeStyle'] as string[])
+      .filter((style) => style === theme.NODE_BORDER_NEIGHBORHOOD).length;
+    expect(focusCount).toBe(2);
   });
 
   it('selected takes priority over hovered — uses SELECTED color (same as hover when colors match)', () => {

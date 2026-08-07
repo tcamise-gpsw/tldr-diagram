@@ -4,6 +4,7 @@ import { loadDiagramData, getViewElements, getViewConnectors, getDescendantRefs 
 import { DiagramData } from './data/types';
 import { computeExternalStubs } from './canvas/stubs';
 import { computeComponentFocus } from './data/focus';
+import { parseTargetNames, resolveElementNames } from './data/deepLink';
 import { getOrComputeLayout, invalidateLayout } from './canvas/layout';
 import { CanvasViewport } from './canvas/CanvasViewport';
 import { Toolbar } from './components/Toolbar';
@@ -26,6 +27,7 @@ export const App: React.FC = () => {
   // Capture raw URL params once at mount — before the sync effect wipes them
   const [initialSelected] = useState(() => new URLSearchParams(window.location.search).get('selected'));
   const [initialFocus] = useState(() => new URLSearchParams(window.location.search).get('focus'));
+  const [initialTargetNames] = useState(() => parseTargetNames(window.location.search));
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [hoveredGroupIcon, setHoveredGroupIcon] = useState<string | null>(null);
@@ -34,6 +36,7 @@ export const App: React.FC = () => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [showExternalStubs, setShowExternalStubs] = useState(true);
   const [focusedNode, setFocusedNode] = useState<string | null>(null);
+  const [focusTargetRefs, setFocusTargetRefs] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,10 +53,9 @@ export const App: React.FC = () => {
         setSourceRoot(root);
         setLoading(false);
         // Resolve initial URL params (captured before sync effect wiped the URL)
-        const byName = (name: string) =>
-          [...loadedData.elements.values()].find((e) => e.name === name)?.ref ?? null;
-        if (initialSelected) setSelectedNode(byName(initialSelected));
-        if (initialFocus) setFocusedNode(byName(initialFocus));
+        if (initialSelected) setSelectedNode(resolveElementNames(loadedData, [initialSelected])[0] ?? null);
+        if (initialFocus) setFocusedNode(resolveElementNames(loadedData, [initialFocus])[0] ?? null);
+        setFocusTargetRefs(resolveElementNames(loadedData, initialTargetNames));
       })
       .catch((err) => {
         setError(err.message);
@@ -61,7 +63,6 @@ export const App: React.FC = () => {
       });
   }, []);
 
-  // Sync navigation state → URL (replaceState keeps history entries clean)
   // Sync navigation state → URL using short display names, not full refs
   useEffect(() => {
     const params = new URLSearchParams();
@@ -70,13 +71,18 @@ export const App: React.FC = () => {
       const name = data.elements.get(selectedNode)?.name;
       if (name) params.set('selected', name);
     }
-    if (focusedNode && data) {
+    if (focusTargetRefs.length > 0 && data) {
+      for (const ref of focusTargetRefs) {
+        const name = data.elements.get(ref)?.name;
+        if (name) params.append('targets', name);
+      }
+    } else if (focusedNode && data) {
       const name = data.elements.get(focusedNode)?.name;
       if (name) params.set('focus', name);
     }
     const qs = params.toString();
     window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
-  }, [currentView, selectedNode, focusedNode, data]);
+  }, [currentView, selectedNode, focusedNode, focusTargetRefs, data]);
 
   const highlightedExternalEdges = useMemo(() => {
     if (!data || !selectedNode) return new Set<string>();
@@ -98,12 +104,15 @@ export const App: React.FC = () => {
     return new Set(externalKeys);
   }, [data, selectedNode, currentView]);
 
+  const focusedTargetSet = useMemo(() => new Set(focusTargetRefs), [focusTargetRefs]);
+
   const handleSelect = useCallback((ref: string | null) => {
     setSelectedNode(ref);
   }, []);
 
 
   const handleShowFocus = useCallback((ref: string) => {
+    setFocusTargetRefs([]);
     setFocusedNode(ref);
     setSelectedNode(ref);
     invalidateLayout(`focus:${ref}`);
@@ -111,6 +120,7 @@ export const App: React.FC = () => {
   }, []);
 
   const handleExitFocus = useCallback(() => {
+    setFocusTargetRefs([]);
     setFocusedNode(null);
   }, []);
 
@@ -189,7 +199,7 @@ export const App: React.FC = () => {
 
   const handleGoUp = useCallback(() => {
     if (!data) return;
-    if (focusedNode) {
+    if (focusedNode || focusTargetRefs.length > 0) {
       handleExitFocus();
       return;
     }
@@ -198,7 +208,7 @@ export const App: React.FC = () => {
       return;
     }
     handleGoToLevel(navigationStack.length - 2);
-  }, [data, focusedNode, handleExitFocus, navigationStack, handleGoToLevel]);
+  }, [data, focusedNode, focusTargetRefs, handleExitFocus, navigationStack, handleGoToLevel]);
 
   const handleNavigateToElement = useCallback((targetRef: string) => {
     if (!data) return;
@@ -211,6 +221,7 @@ export const App: React.FC = () => {
     // Target is in the current view — drill in or select
     if (targetParent === currentView) {
       setFocusedNode(null);
+      setFocusTargetRefs([]);
       if (targetElement.has_view) {
         handleEnterGroup(targetRef);
       } else {
@@ -231,6 +242,7 @@ export const App: React.FC = () => {
     path.unshift('root');
 
     setFocusedNode(null);
+    setFocusTargetRefs([]);
     setNavigationStack(path);
     setSelectedNode(targetRef);
     invalidateLayout(targetParent);
@@ -267,17 +279,22 @@ export const App: React.FC = () => {
     return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>Error: {error}</div>;
   }
 
-  const focus = focusedNode
-    ? computeComponentFocus(data, focusedNode)
+  const activeFocusRefs = focusTargetRefs.length > 0
+    ? focusTargetRefs
+    : focusedNode
+      ? [focusedNode]
+      : [];
+  const focus = activeFocusRefs.length > 0
+    ? computeComponentFocus(data, activeFocusRefs)
     : null;
   const viewElements = focus?.elements ?? getViewElements(data, currentView);
   const viewConnectors = focus?.connectors ?? getViewConnectors(data, currentView);
-  const layoutKey = focusedNode ? `focus:${focusedNode}` : currentView;
+  const layoutKey = activeFocusRefs.length > 0 ? `focus:${activeFocusRefs.join('|')}` : currentView;
   const layout = getOrComputeLayout(layoutKey, viewElements, viewConnectors, 'BT');
 
   // Focus views already contain every direct edge. Hierarchical views use
   // expandable stubs for connections beyond their current boundary.
-  const externalStubs = focusedNode
+  const externalStubs = activeFocusRefs.length > 0
     ? []
     : showExternalStubs
       ? computeExternalStubs(data, currentView, layout, selectedNode ?? undefined)
@@ -298,7 +315,7 @@ export const App: React.FC = () => {
                 <span
                   className={`breadcrumb-item ${isLast ? 'active' : ''}`}
                   onClick={() => isLast
-                    ? (focusedNode ? handleExitFocus() : handleSelect(currentView))
+                    ? (activeFocusRefs.length > 0 ? handleExitFocus() : handleSelect(currentView))
                     : handleGoToLevel(idx)}
                   style={{ cursor: 'pointer', fontWeight: isLast ? 'bold' : 'normal' }}
                 >
@@ -307,11 +324,11 @@ export const App: React.FC = () => {
               </React.Fragment>
             );
           })}
-          {focusedNode && (
+          {activeFocusRefs.length > 0 && (
             <>
               <span className="breadcrumb-separator">/</span>
               <span className="breadcrumb-item active breadcrumb-item--focus">
-                Focus: {data.elements.get(focusedNode)?.name ?? focusedNode}
+                Focus: {activeFocusRefs.map((ref) => data.elements.get(ref)?.name ?? ref).join(' + ')}
               </span>
             </>
           )}
@@ -334,6 +351,7 @@ export const App: React.FC = () => {
             hoveredSourceIcon,
             selectedNode,
             focusedNode,
+            focusedNodes: focusedTargetSet,
             showExternalStubs,
             highlightedExternalEdges,
           }}

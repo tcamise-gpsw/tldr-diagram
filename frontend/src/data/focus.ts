@@ -5,13 +5,22 @@ export interface ComponentFocus {
   connectors: Connector[];
 }
 
-/** Build a cross-hierarchy focus view containing one component and every direct class-level neighbor. */
+/**
+ * Build a cross-hierarchy focus view containing one or more target components, every direct
+ * class-level neighbor of any target, and every class-level edge among the resulting nodes.
+ */
 export function computeComponentFocus(
   data: DiagramData,
-  centerRef: string,
+  centerRefs: string | readonly string[],
 ): ComponentFocus {
-  const center = data.elements.get(centerRef);
-  if (!center || center.has_view) return { elements: [], connectors: [] };
+  const requestedRefs = typeof centerRefs === 'string' ? [centerRefs] : centerRefs;
+  const targets = new Set(
+    requestedRefs.filter((ref) => {
+      const element = data.elements.get(ref);
+      return element !== undefined && !element.has_view;
+    }),
+  );
+  if (targets.size === 0) return { elements: [], connectors: [] };
 
   const isClassConnector = (connector: Connector): boolean => {
     const source = data.elements.get(connector.source);
@@ -23,11 +32,11 @@ export function computeComponentFocus(
       && (!connector.level || connector.level === 'class');
   };
 
-  const members = new Set<string>([centerRef]);
+  const members = new Set<string>(targets);
   for (const connector of data.connectors) {
     if (!isClassConnector(connector)) continue;
-    if (connector.source === centerRef) members.add(connector.target);
-    if (connector.target === centerRef) members.add(connector.source);
+    if (targets.has(connector.source)) members.add(connector.target);
+    if (targets.has(connector.target)) members.add(connector.source);
   }
 
   const connectors: Connector[] = [];

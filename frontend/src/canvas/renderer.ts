@@ -9,6 +9,7 @@ export interface RenderState {
   hoveredGroupIcon: string | null;
   selectedNode: string | null;
   focusedNode: string | null;
+  focusedNodes?: ReadonlySet<string>;
   hoveredFocusIcon: string | null;
   hoveredSourceIcon: string | null;
   showExternalStubs: boolean;
@@ -210,7 +211,7 @@ function drawNodes(
 
     const isHovered = node.ref === state.hoveredNode;
     const isSelected = node.ref === state.selectedNode;
-    const isFocused = node.ref === state.focusedNode;
+    const isFocused = node.ref === state.focusedNode || state.focusedNodes?.has(node.ref) === true;
     const elem = elements.get(node.ref);
 
     // Draw node background
