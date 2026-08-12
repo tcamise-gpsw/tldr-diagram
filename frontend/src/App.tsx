@@ -256,8 +256,10 @@ export const App: React.FC = () => {
       const isTyping = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target as HTMLElement)?.isContentEditable;
       if (e.key === 'Escape') {
         handleGoUp();
-      } else if (e.key === 'f' && !isTyping) {
+      } else if (!isTyping && e.key === 'f') {
         invalidateLayout(currentView);
+      } else if (!isTyping && e.key === 's') {
+        setPanelCollapsed((prev) => !prev);
       }
     };
     const handlePopState = () => {
