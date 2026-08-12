@@ -272,8 +272,12 @@ export const App: React.FC = () => {
           ? nodes[(idx + 1) % nodes.length]
           : nodes[(idx - 1 + nodes.length) % nodes.length];
         handleSelect(next.ref);
-      } else if (!isTyping && e.key === 'Enter' && selectedNode && data) {
+      } else if (!isTyping && (e.key === 'ArrowDown' || e.key === 'Enter') && selectedNode && data) {
+        e.preventDefault();
         if (data.elements.get(selectedNode)?.has_view) handleEnterGroup(selectedNode);
+      } else if (!isTyping && e.key === 'ArrowUp') {
+        e.preventDefault();
+        handleGoUp();
       }
     };
     const handlePopState = () => {
