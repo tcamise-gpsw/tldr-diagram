@@ -252,8 +252,12 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      const isTyping = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target as HTMLElement)?.isContentEditable;
       if (e.key === 'Escape') {
         handleGoUp();
+      } else if (e.key === 'f' && !isTyping) {
+        invalidateLayout(currentView);
       }
     };
     const handlePopState = () => {
@@ -265,7 +269,7 @@ export const App: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [handleGoUp]);
+  }, [handleGoUp, currentView]);
 
   const handleHover = useCallback((ref: string | null, x: number, y: number) => {
     setHoveredNode(ref);
