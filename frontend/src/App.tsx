@@ -28,7 +28,7 @@ export const App: React.FC = () => {
   const [initialSelected] = useState(() => new URLSearchParams(window.location.search).get('selected'));
   const [initialFocus] = useState(() => new URLSearchParams(window.location.search).get('focus'));
   const [initialTargetNames] = useState(() => parseTargetNames(window.location.search));
-  const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const [panelCollapsed, setPanelCollapsed] = useState(() => new URLSearchParams(window.location.search).get('panel') === 'collapsed');
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [hoveredGroupIcon, setHoveredGroupIcon] = useState<string | null>(null);
   const [hoveredFocusIcon, setHoveredFocusIcon] = useState<string | null>(null);
@@ -80,9 +80,10 @@ export const App: React.FC = () => {
       const name = data.elements.get(focusedNode)?.name;
       if (name) params.set('focus', name);
     }
+    if (panelCollapsed) params.set('panel', 'collapsed');
     const qs = params.toString();
     window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
-  }, [currentView, selectedNode, focusedNode, focusTargetRefs, data]);
+  }, [currentView, selectedNode, focusedNode, focusTargetRefs, data, panelCollapsed]);
 
   const highlightedExternalEdges = useMemo(() => {
     if (!data || !selectedNode) return new Set<string>();
