@@ -5,32 +5,13 @@ import { DiagramData } from './data/types';
 import { computeExternalStubs } from './canvas/stubs';
 import { computeComponentFocus } from './data/focus';
 import { parseTargetNames, resolveElementNames } from './data/deepLink';
-import { getOrComputeLayout, invalidateLayout, LayoutNode, ViewLayout } from './canvas/layout';
+import { getOrComputeLayout, invalidateLayout, ViewLayout } from './canvas/layout';
 import { CanvasViewport } from './canvas/CanvasViewport';
 import { Toolbar } from './components/Toolbar';
 import { Tooltip } from './components/Tooltip';
 import { SidePanel } from './components/SidePanel';
 import { startTransition, startExitTransition, TransitionState } from './canvas/animation';
 import './styles.css';
-
-/** Spatial arrow-key navigation: find nearest layout node in the given direction. */
-function spatialNavigate(nodes: LayoutNode[], currentRef: string, dirX: number, dirY: number): string | null {
-  const current = nodes.find(n => n.ref === currentRef);
-  if (!current) return null;
-  let bestRef: string | null = null;
-  let bestScore = -Infinity;
-  for (const node of nodes) {
-    if (node.ref === currentRef) continue;
-    const dx = node.x - current.x;
-    const dy = node.y - current.y;
-    const primary = dx * dirX + dy * dirY;   // forward component — must be > 0
-    if (primary <= 0) continue;
-    const secondary = Math.abs(dx * dirY - dy * dirX); // perpendicular displacement
-    const score = primary - 1.5 * secondary;            // penalise lateral drift
-    if (score > bestScore) { bestScore = score; bestRef = node.ref; }
-  }
-  return bestRef;
-}
 
 export const App: React.FC = () => {
   const [data, setData] = useState<DiagramData | null>(null);
@@ -282,15 +263,15 @@ export const App: React.FC = () => {
         invalidateLayout(currentView);
       } else if (!isTyping && e.key === 's') {
         setPanelCollapsed((prev) => !prev);
-      } else if (!isTyping && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      } else if (!isTyping && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
         e.preventDefault();
-        const dirs: Record<string, [number, number]> = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
-        const [dirX, dirY] = dirs[e.key];
         const nodes = layoutRef.current.nodes;
         if (nodes.length === 0) return;
-        if (!selectedNode) { handleSelect(nodes[0]?.ref ?? null); return; }
-        const next = spatialNavigate(nodes, selectedNode, dirX, dirY);
-        if (next) handleSelect(next);
+        const idx = nodes.findIndex(n => n.ref === selectedNode);
+        const next = e.key === 'ArrowRight'
+          ? nodes[(idx + 1) % nodes.length]
+          : nodes[(idx - 1 + nodes.length) % nodes.length];
+        handleSelect(next.ref);
       } else if (!isTyping && e.key === 'Enter' && selectedNode && data) {
         if (data.elements.get(selectedNode)?.has_view) handleEnterGroup(selectedNode);
       }
