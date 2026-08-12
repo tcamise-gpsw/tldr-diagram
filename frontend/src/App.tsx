@@ -1,17 +1,36 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import logoUrl from './assets/logo.png';
 import { loadDiagramData, getViewElements, getViewConnectors, getDescendantRefs } from './data/loader';
 import { DiagramData } from './data/types';
 import { computeExternalStubs } from './canvas/stubs';
 import { computeComponentFocus } from './data/focus';
 import { parseTargetNames, resolveElementNames } from './data/deepLink';
-import { getOrComputeLayout, invalidateLayout } from './canvas/layout';
+import { getOrComputeLayout, invalidateLayout, LayoutNode, ViewLayout } from './canvas/layout';
 import { CanvasViewport } from './canvas/CanvasViewport';
 import { Toolbar } from './components/Toolbar';
 import { Tooltip } from './components/Tooltip';
 import { SidePanel } from './components/SidePanel';
 import { startTransition, startExitTransition, TransitionState } from './canvas/animation';
 import './styles.css';
+
+/** Spatial arrow-key navigation: find nearest layout node in the given direction. */
+function spatialNavigate(nodes: LayoutNode[], currentRef: string, dirX: number, dirY: number): string | null {
+  const current = nodes.find(n => n.ref === currentRef);
+  if (!current) return null;
+  let bestRef: string | null = null;
+  let bestScore = -Infinity;
+  for (const node of nodes) {
+    if (node.ref === currentRef) continue;
+    const dx = node.x - current.x;
+    const dy = node.y - current.y;
+    const primary = dx * dirX + dy * dirY;   // forward component — must be > 0
+    if (primary <= 0) continue;
+    const secondary = Math.abs(dx * dirY - dy * dirX); // perpendicular displacement
+    const score = primary - 1.5 * secondary;            // penalise lateral drift
+    if (score > bestScore) { bestScore = score; bestRef = node.ref; }
+  }
+  return bestRef;
+}
 
 export const App: React.FC = () => {
   const [data, setData] = useState<DiagramData | null>(null);
@@ -44,6 +63,9 @@ export const App: React.FC = () => {
     transitionState: TransitionState;
     action: () => void;
   } | null>(null);
+  // Ref updated every render so the keydown handler can read the latest layout
+  // without stale-closure issues (layout is computed in the render body, not state).
+  const layoutRef = useRef<ViewLayout>({ nodes: [], edges: [], width: 0, height: 0 });
 
   // Load diagram data on mount; resolve URL-param names → full refs after load
   useEffect(() => {
@@ -260,6 +282,17 @@ export const App: React.FC = () => {
         invalidateLayout(currentView);
       } else if (!isTyping && e.key === 's') {
         setPanelCollapsed((prev) => !prev);
+      } else if (!isTyping && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        e.preventDefault();
+        const dirs: Record<string, [number, number]> = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
+        const [dirX, dirY] = dirs[e.key];
+        const nodes = layoutRef.current.nodes;
+        if (nodes.length === 0) return;
+        if (!selectedNode) { handleSelect(nodes[0]?.ref ?? null); return; }
+        const next = spatialNavigate(nodes, selectedNode, dirX, dirY);
+        if (next) handleSelect(next);
+      } else if (!isTyping && e.key === 'Enter' && selectedNode && data) {
+        if (data.elements.get(selectedNode)?.has_view) handleEnterGroup(selectedNode);
       }
     };
     const handlePopState = () => {
@@ -271,7 +304,7 @@ export const App: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [handleGoUp, currentView]);
+  }, [handleGoUp, currentView, selectedNode, data, handleSelect, handleEnterGroup]);
 
   const handleHover = useCallback((ref: string | null, x: number, y: number) => {
     setHoveredNode(ref);
@@ -298,6 +331,7 @@ export const App: React.FC = () => {
   const viewConnectors = focus?.connectors ?? getViewConnectors(data, currentView);
   const layoutKey = activeFocusRefs.length > 0 ? `focus:${activeFocusRefs.join('|')}` : currentView;
   const layout = getOrComputeLayout(layoutKey, viewElements, viewConnectors, 'BT');
+  layoutRef.current = layout;
 
   // Focus views already contain every direct edge. Hierarchical views use
   // expandable stubs for connections beyond their current boundary.
